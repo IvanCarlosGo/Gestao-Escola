@@ -9,7 +9,8 @@ const { waitForDatabase } = require('../config/db');
 const { migrar } = require('../config/migracoes');
 const { iniciais, avatarCor, dataCurta } = require('../config/ui');
 const { PERFIS } = require('../config/auth');
-const { carregarAdmin, exigirAdmin, prepararAdminPlataforma } = require('./auth');
+const { carregarAdmin, exigirAdmin } = require('./auth');
+const { seedAdmin } = require('./seeder');
 
 const app = express();
 const PORT = process.env.PAINEL_PORT || 8080;
@@ -53,7 +54,7 @@ async function start() {
   try {
     await waitForDatabase();
     await migrar();
-    await prepararAdminPlataforma();
+    await seedAdmin();
     app.listen(PORT, () => console.log(`Painel da plataforma em http://localhost:${PORT}`));
   } catch (err) {
     console.error('Falha ao iniciar o painel:', err.message);

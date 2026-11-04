@@ -57,7 +57,7 @@ services:
       PAINEL_PORT: 8080
       TZ: ${TZ:-Atlantic/Cape_Verde}
       SESSION_SECRET: ${SESSION_SECRET:-}
-      PAINEL_EMAIL: ${PAINEL_EMAIL:-plataforma@escola.cv}
+      PAINEL_EMAIL: ${PAINEL_EMAIL:-}
       PAINEL_PASSWORD: ${PAINEL_PASSWORD:-}
       COOKIE_SECURE: ${COOKIE_SECURE:-0}
       DB_HOST: db

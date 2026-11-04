@@ -59,10 +59,11 @@ docker logs escola_app | grep -A3 "Administrador criado"
 
 Depois de entrar, altere a palavra-passe em **Definições** e crie as restantes contas em **Utilizadores**.
 
-O **painel da plataforma** tem a sua própria conta, criada também no primeiro arranque (`PAINEL_EMAIL`, por omissão `plataforma@escola.cv`):
+O **painel da plataforma** tem a sua própria conta, criada pelo seeder [painel/seeder.js](painel/seeder.js) (`admin@admin.cv`). Altere a palavra-passe em **Administradores → A minha conta** depois de entrar.
 
 ```bash
-docker logs escola_painel | grep -A3 "conta criada"
+npm run seed:admin              # cria a conta se não existir
+npm run seed:admin -- --repor   # repõe a palavra-passe por omissão
 ```
 
 Os dados ficam persistidos no volume `db-data`. Para recomeçar do zero:
@@ -98,8 +99,8 @@ Ajusta o `.env` se necessário (por defeito `DB_HOST=db`, muda para `localhost` 
 | ADMIN_EMAIL | Email do administrador criado no primeiro arranque | admin@escola.cv |
 | ADMIN_PASSWORD | Palavra-passe desse administrador | — (gerada e mostrada nos logs) |
 | COOKIE_SECURE | `1` quando a aplicação estiver em HTTPS | 0 |
-| PAINEL_EMAIL | Email da conta do painel da plataforma | plataforma@escola.cv |
-| PAINEL_PASSWORD | Palavra-passe dessa conta | — (gerada e mostrada nos logs do `escola_painel`) |
+| PAINEL_EMAIL | Email da conta do painel (substitui a do seeder) | admin@admin.cv |
+| PAINEL_PASSWORD | Palavra-passe dessa conta (substitui a do seeder) | a do seeder |
 
 > Nota: a porta do MySQL exposta ao Windows é **3307** (`docker-compose.yml`), porque a 3306 pode já estar ocupada por outra instalação local de MySQL. Isto não afeta a app, que liga sempre internamente à porta 3306 dentro da rede Docker.
 
