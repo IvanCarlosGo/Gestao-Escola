@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <%- include('partials/head') %>
+</head>
+<body>
+  <div class="app-layout">
+    <%- include('partials/sidebar') %>
+
+    <div class="main-content">
+      <%- include('partials/topbar', { pageIcon: 'fa-chart-column', pageSubtitle: 'Estatísticas gerais e exportação de dados.' }) %>
+
+      <main class="content-body">
+
+        <div class="stat-mini-grid" style="margin-bottom: 20px;">
+          <div class="stat-card">
+            <div class="stat-icon indigo"><i class="fa-solid fa-chalkboard-user"></i></div>
+            <div><div class="stat-value"><%= resumo.totalProfessores %></div><div class="stat-label">Professores ativos</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon indigo"><i class="fa-solid fa-people-group"></i></div>
+            <div><div class="stat-value"><%= resumo.totalTurmas %></div><div class="stat-label">Turmas</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon indigo"><i class="fa-solid fa-book"></i></div>
+            <div><div class="stat-value"><%= resumo.totalDisciplinas %></div><div class="stat-label">Disciplinas</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon amber"><i class="fa-solid fa-calendar-xmark"></i></div>
+            <div><div class="stat-value"><%= resumo.totalFaltas %></div><div class="stat-label">Faltas (total)</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green"><i class="fa-solid fa-percent"></i></div>
+            <div><div class="stat-value"><%= taxaJustificacao %>%</div><div class="stat-label">Taxa de justificação</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon red"><i class="fa-solid fa-calendar"></i></div>
+            <div><div class="stat-value"><%= resumo.totalFaltasAno %></div><div class="stat-label">Faltas este ano letivo</div></div>
+          </div>
+        </div>
+
+        <div class="panel-grid">
+          <div class="card">
+            <div class="card-header"><h3>Faltas por disciplina</h3></div>
+            <% if (porDisciplina.length === 0) { %>
+              <p class="page-subtitle">Ainda não há dados suficientes.</p>
+            <% } else { %>
+              <% porDisciplina.forEach(d => { %>
+                <div class="ranking-item">
+                  <div class="ranking-avatar"><i class="fa-solid fa-book"></i></div>
+                  <div class="ranking-info"><strong><%= d.nome %></strong></div>
+                  <div class="ranking-count"><%= d.total %></div>
+                </div>
+              <% }) %>
+            <% } %>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h3>Gerar relatório</h3></div>
+            <p class="page-subtitle export-intro">
+              Escolha os filtros (opcional) e o formato. Sem filtros, o relatório inclui todas as faltas.
+            </p>
+
+            <form method="GET" action="/relatorios/exportar.pdf" class="export-form">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>De</label>
+                  <input type="date" name="data_inicio">
+                </div>
+                <div class="form-group">
+                  <label>Até</label>
+                  <input type="date" name="data_fim">
+                </div>
+                <div class="form-group full">
+                  <label>Professor</label>
+                  <select name="professor_id">
+                    <option value="">Todos os professores</option>
+                    <% professores.forEach(p => { %>
+                      <option value="<%= p.id %>"><%= p.nome %></option>
+                    <% }) %>
+                  </select>
+                </div>
+                <div class="form-group full">
+                  <label>Estado</label>
+                  <select name="estado">
+                    <option value="">Todas</option>
+                    <option value="justificada">Só justificadas</option>
+                    <option value="injustificada">Só não justificadas</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="export-period-shortcuts">
+                <button type="button" class="btn btn-outline btn-sm" data-periodo="mes">Este mês</button>
+                <button type="button" class="btn btn-outline btn-sm" data-periodo="mes-anterior">Mês anterior</button>
+                <button type="button" class="btn btn-outline btn-sm" data-periodo="ano">Este ano</button>
+                <button type="button" class="btn btn-outline btn-sm" data-periodo="limpar">Limpar</button>
+              </div>
+
+              <div class="export-buttons">
+                <button type="submit" class="btn btn-primary" formaction="/relatorios/exportar.pdf">
+                  <i class="fa-regular fa-file-pdf"></i> Descarregar PDF
+                </button>
+                <button type="submit" class="btn btn-outline" formaction="/relatorios/exportar.csv">
+                  <i class="fa-solid fa-file-csv"></i> Descarregar CSV
+                </button>
+              </div>
+              <p class="export-hint">PDF: relatório pronto a imprimir ou enviar. CSV: dados para abrir no Excel.</p>
+            </form>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+  <script>
+    // Atalhos de período para o relatório
+    (() => {
+      const form = document.querySelector('.export-form');
+      if (!form) return;
+      const inicio = form.querySelector('[name="data_inicio"]');
+      const fim = form.querySelector('[name="data_fim"]');
+      const iso = (d) => d.toLocaleDateString('sv-SE');
+      form.querySelectorAll('[data-periodo]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const hoje = new Date();
+          const p = btn.dataset.periodo;
+          if (p === 'mes') { inicio.value = iso(new Date(hoje.getFullYear(), hoje.getMonth(), 1)); fim.value = iso(hoje); }
+          if (p === 'mes-anterior') {
+            inicio.value = iso(new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1));
+            fim.value = iso(new Date(hoje.getFullYear(), hoje.getMonth(), 0));
+          }
+          if (p === 'ano') { inicio.value = iso(new Date(hoje.getFullYear(), 0, 1)); fim.value = iso(hoje); }
+          if (p === 'limpar') { inicio.value = ''; fim.value = ''; }
+        });
+      });
+    })();
+  </script>
+  <%- include('partials/scripts') %>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <%- include('partials/head') %>
+</head>
+<body>
+  <div class="app-layout">
+    <%- include('partials/sidebar') %>
+
+    <div class="main-content">
+      <%- include('partials/topbar', { pageSubtitle: 'Bem-vindo! Aqui pode visualizar o resumo das faltas dos professores.' }) %>
+
+      <main class="content-body">
+
+        <% if (success) { %>
+          <div class="alert alert-success"><i class="fa-solid fa-circle-check"></i> <%= success %></div>
+        <% } %>
+
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon blue"><i class="fa-solid fa-user-group"></i></div>
+            <div>
+              <div class="kpi-label">Total de Professores</div>
+              <div class="kpi-value"><%= stats.totalProfessores %></div>
+              <a href="/professores" class="kpi-link">Ver todos <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon red"><i class="fa-regular fa-calendar-xmark"></i></div>
+            <div>
+              <div class="kpi-label">Faltas no Mês Atual</div>
+              <div class="kpi-value"><%= stats.totalFaltasMes %></div>
+              <a href="/faltas" class="kpi-link">Ver registos <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon green"><i class="fa-solid fa-percent"></i></div>
+            <div>
+              <div class="kpi-label">Taxa de Assiduidade</div>
+              <div class="kpi-value"><%= stats.taxaAssiduidade %>%</div>
+              <a href="/relatorios" class="kpi-link">Ver relatório <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+          </div>
+        </div>
+
+        <div class="card now-card">
+          <% if (demo) { %>
+            <div class="demo-banner">
+              <i class="fa-solid fa-flask"></i>
+              <span><strong>Dados de demonstração</strong> — esta lista é fictícia e serve só para pré-visualizar. Nada foi gravado.</span>
+              <a href="/" class="link">Ver dados reais</a>
+            </div>
+          <% } %>
+          <div class="card-header">
+            <h3>
+              <span class="live-dot" aria-hidden="true"></span>
+              Professores com aula agora
+              <span class="now-count"><%= aulasAgora.length %></span>
+            </h3>
+            <div class="now-actions">
+              <span class="now-time"><i class="fa-regular fa-clock"></i> <%= momentoAtual %></span>
+              <a href="/horarios" class="link">Ver horários <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+          </div>
+
+          <% if (aulasAgora.length === 0) { %>
+            <div class="now-empty">
+              <i class="fa-regular fa-calendar"></i>
+              <span>
+                Nenhum professor tem aula neste momento.
+                <% if (proximaAula) { %>Próxima aula hoje às <strong><%= proximaAula.hora_inicio.slice(0, 5) %></strong>.<% } %>
+              </span>
+            </div>
+          <% } else { %>
+            <div class="table-scroll">
+              <table class="now-table">
+                <thead>
+                  <tr>
+                    <th>Professor</th>
+                    <th>Disciplina</th>
+                    <th>Turma</th>
+                    <th>Sala</th>
+                    <th>Horário</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% aulasAgora.forEach(a => { %>
+                    <tr class="<%= a.tem_falta ? 'now-row-falta' : '' %>">
+                      <td>
+                        <a href="/professores/<%= a.professor_id %>" class="person-cell">
+                          <span class="avatar avatar-sm <%= avatarCor(a.professor_id) %>"><%= iniciais(a.professor_nome) %></span>
+                          <span class="cell-name"><%= a.professor_nome %></span>
+                        </a>
+                      </td>
+                      <td><%= a.disciplina_nome %></td>
+                      <td><%= a.turma_nome %></td>
+                      <td class="cell-muted"><%= a.sala || '—' %></td>
+                      <td>
+                        <div class="now-time-cell">
+                          <span><%= a.hora_inicio.slice(0, 5) %>–<%= a.hora_fim.slice(0, 5) %></span>
+                          <span class="now-progress" title="<%= a.progresso %>% da aula decorrida"><span style="width: <%= a.progresso %>%"></span></span>
+                          <small>termina em <%= a.minutosRestantes %> min</small>
+                        </div>
+                      </td>
+                      <td>
+                        <% if (a.tem_falta) { %>
+                          <span class="badge badge-danger">Falta registada</span>
+                        <% } else { %>
+                          <span class="badge badge-success">Em aula</span>
+                        <% } %>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="dashboard-main">
+            <div class="card">
+              <div class="card-header"><h3>Faltas por Mês</h3></div>
+              <div class="chart-box"><canvas id="chartFaltas"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="card-header"><h3>Ações rápidas</h3></div>
+              <div class="quick-grid">
+                <a href="/faltas" class="quick-card">
+                  <span class="quick-icon solid"><i class="fa-regular fa-clock"></i></span>
+                  <span><strong>Registos de Faltas</strong><small>Consultar todas as faltas</small></span>
+                </a>
+                <a href="/professores" class="quick-card">
+                  <span class="quick-icon"><i class="fa-solid fa-user"></i></span>
+                  <span><strong>Ver Professores</strong><small>Lista completa de professores</small></span>
+                </a>
+                <a href="/relatorios" class="quick-card">
+                  <span class="quick-icon"><i class="fa-regular fa-file-lines"></i></span>
+                  <span><strong>Gerar Relatório</strong><small>Exportar dados de faltas</small></span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3>Últimas Faltas Registadas</h3>
+              <a href="/faltas" class="link">Ver todas <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+
+            <% if (faltasRecentes.length === 0) { %>
+              <div class="empty-state">
+                <i class="fa-regular fa-calendar-check"></i>
+                <p>Ainda não existem faltas registadas.</p>
+              </div>
+            <% } else { %>
+              <div class="recent-list">
+                <% faltasRecentes.forEach(f => { %>
+                  <a href="/professores/<%= f.professor_id %>" class="recent-item">
+                    <span class="avatar avatar-md <%= f.justificada ? 'blue' : 'rose' %>"><%= iniciais(f.professor_nome) %></span>
+                    <span class="recent-info">
+                      <strong><%= f.professor_nome %></strong>
+                      <span><%= dataCurta(f.data_falta) %> <span class="dot">•</span> <%= f.motivo || (f.tipo === 'atraso' ? 'Atraso' : 'Falta') %></span>
+                    </span>
+                    <% if (f.justificada) { %>
+                      <span class="badge badge-success">Justificada</span>
+                    <% } else { %>
+                      <span class="badge badge-danger">Não justificada</span>
+                    <% } %>
+                  </a>
+                <% }) %>
+              </div>
+            <% } %>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script>
+    const meses = <%- JSON.stringify(faltasPorMes.map(f => f.mes)) %>;
+    const totais = <%- JSON.stringify(faltasPorMes.map(f => f.total)) %>;
+
+    new Chart(document.getElementById('chartFaltas'), {
+      type: 'bar',
+      data: {
+        labels: meses,
+        datasets: [{
+          label: 'Faltas',
+          data: totais,
+          backgroundColor: '#223C2F',
+          borderRadius: 3,
+          maxBarThickness: 30
+        }]
+      },
+      options: {
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: {
+            beginAtZero: true,
+            suggestedMax: 5,
+            ticks: { precision: 0, color: '#6b7280', font: { size: 11 } },
+            grid: { color: '#eef0f4' },
+            border: { display: false }
+          },
+          x: {
+            ticks: { color: '#374151', font: { size: 11 } },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  </script>
+  <%- include('partials/scripts') %>
+</body>
+</html>

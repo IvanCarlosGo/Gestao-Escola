@@ -1,0 +1,4 @@
+# Quebras de linha em formato Linux (a aplicação corre em Docker)
+* text=auto eol=lf
+*.jpg binary
+*.png binary

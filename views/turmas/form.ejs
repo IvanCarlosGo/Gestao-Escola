@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body>
+  <div class="app-layout">
+    <%- include('../partials/sidebar') %>
+
+    <div class="main-content">
+      <%- include('../partials/topbar', { pageIcon: 'fa-people-group' }) %>
+
+      <main class="content-body">
+
+        <% if (error) { %>
+          <div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i> <%= error %></div>
+        <% } %>
+
+        <div class="form-card">
+          <form method="POST" action="<%= turma.id ? '/turmas/' + turma.id + '?_method=PUT' : '/turmas' %>">
+            <div class="form-grid">
+              <%
+                // Anos antigos fora da lista continuam disponíveis para não se perderem ao editar
+                const listaAnos = partes.ano && !anos.includes(partes.ano) ? [...anos, partes.ano] : anos;
+                // Um nome que não seja uma das letras (ex: "ASIBD1") abre a opção "Outro nome"
+                const nomeProprio = partes.letra && !letras.includes(partes.letra) ? partes.letra : '';
+                const nomeInicial = partes.ano && partes.letra
+                  ? (partes.letra.length === 1 ? partes.ano + 'º' + partes.letra : partes.ano + 'º ' + partes.letra)
+                  : '—';
+              %>
+              <% if (turma.id && turma.nome && !partes.ano && !partes.letra) { %>
+                <div class="form-group full">
+                  <div class="info-box">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>O nome atual "<strong><%= turma.nome %></strong>" não segue o formato ano + turma. Escolha o ano e a turma para o atualizar.</span>
+                  </div>
+                </div>
+              <% } %>
+
+              <div class="form-group">
+                <label>Ano <span class="req">*</span></label>
+                <select name="ano" id="turmaAno" required>
+                  <option value="">Selecione o ano</option>
+                  <% listaAnos.forEach(a => { %>
+                    <option value="<%= a %>" <%= String(partes.ano) === a ? 'selected' : '' %>><%= a %>º ano</option>
+                  <% }) %>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Turma <span class="req">*</span></label>
+                <select name="letra" id="turmaLetra" required>
+                  <option value="">Selecione a turma</option>
+                  <% letras.forEach(l => { %>
+                    <option value="<%= l %>" <%= String(partes.letra) === l ? 'selected' : '' %>>Turma <%= l %></option>
+                  <% }) %>
+                  <option value="outro" <%= nomeProprio ? 'selected' : '' %>>Outro nome…</option>
+                </select>
+              </div>
+
+              <div class="form-group full" id="nomeProprioGrupo" <%= nomeProprio ? '' : 'hidden' %>>
+                <label for="turmaNomeProprio">Nome da turma <span class="req">*</span></label>
+                <input type="text" name="nome_personalizado" id="turmaNomeProprio" value="<%= nomeProprio %>"
+                       maxlength="20" placeholder="Ex: ASIBD1" autocomplete="off">
+                <span class="hint">Letras, números, espaços e hífens (até 20 caracteres).</span>
+              </div>
+
+              <div class="form-group full">
+                <div class="turma-preview">
+                  Nome da turma: <strong id="turmaNome"><%= nomeInicial %></strong>
+                </div>
+              </div>
+              <div class="form-group full">
+                <label>Ano letivo</label>
+                <input type="text" name="ano_letivo" value="<%= turma.ano_letivo || '2025/2026' %>" placeholder="Ex: 2025/2026">
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <a href="/turmas" class="btn btn-outline">Cancelar</a>
+              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar</button>
+            </div>
+          </form>
+        </div>
+
+      </main>
+    </div>
+  </div>
+  <script>
+    // Pré-visualização do nome; "Outro nome…" mostra o campo para escrever o nome da turma
+    (() => {
+      const ano = document.getElementById('turmaAno');
+      const letra = document.getElementById('turmaLetra');
+      const grupo = document.getElementById('nomeProprioGrupo');
+      const proprio = document.getElementById('turmaNomeProprio');
+      const nome = document.getElementById('turmaNome');
+
+      const atualizar = () => {
+        const outro = letra.value === 'outro';
+        grupo.hidden = !outro;
+        proprio.required = outro;
+        const escolhido = outro ? proprio.value.trim().replace(/\s+/g, ' ') : letra.value;
+        if (!ano.value || !escolhido) nome.textContent = '—';
+        else nome.textContent = escolhido.length === 1 ? `${ano.value}º${escolhido.toUpperCase()}` : `${ano.value}º ${escolhido}`;
+      };
+
+      ano.addEventListener('change', atualizar);
+      letra.addEventListener('change', () => { atualizar(); if (letra.value === 'outro') proprio.focus(); });
+      proprio.addEventListener('input', atualizar);
+      atualizar();
+    })();
+  </script>
+  <%- include('../partials/scripts') %>
+</body>
+</html>

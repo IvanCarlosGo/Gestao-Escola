@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body>
+  <div class="app-layout">
+    <%- include('../partials/sidebar') %>
+
+    <div class="main-content">
+      <%- include('../partials/topbar', { hidePageHeader: true }) %>
+
+      <main class="content-body">
+
+        <div class="detail-title">
+          <a href="/professores" class="back-link" aria-label="Voltar"><i class="fa-solid fa-arrow-left"></i></a>
+          <h1>Detalhe do Professor</h1>
+        </div>
+
+        <% if (success) { %>
+          <div class="alert alert-success"><i class="fa-solid fa-circle-check"></i> <%= success %></div>
+        <% } %>
+        <% if (error) { %>
+          <div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i> <%= error %></div>
+        <% } %>
+
+        <%
+          const totalNaoJustificadas = totalFaltas - totalJustificadas;
+          const pct = (n) => totalFaltas ? Math.round((n / totalFaltas) * 100) : 0;
+        %>
+
+        <div class="card detail-card">
+          <div class="profile-header">
+            <span class="avatar avatar-lg <%= avatarCor(professor.id) %>"><%= iniciais(professor.nome) %></span>
+            <div class="profile-info">
+              <h2><%= professor.nome %></h2>
+              <div class="subject"><%= disciplinas.length ? disciplinas.map(d => d.nome).join(', ') : 'Sem disciplina atribuída' %></div>
+              <div class="profile-meta">
+                <% if (professor.email) { %><span><i class="fa-regular fa-envelope"></i> <%= professor.email %></span><% } %>
+                <% if (professor.telefone) { %><span><i class="fa-solid fa-phone"></i> <%= professor.telefone %></span><% } %>
+                <% if (turmas.length) { %><span><i class="fa-solid fa-people-group"></i> <%= turmas.map(t => t.nome).join(', ') %></span><% } %>
+              </div>
+            </div>
+            <div class="profile-actions">
+              <% if (professor.ativo) { %>
+                <span class="badge badge-success">Ativo</span>
+              <% } else { %>
+                <span class="badge badge-muted">Inativo</span>
+              <% } %>
+              <a href="/professores/<%= professor.id %>/editar" class="btn btn-outline btn-sm" title="Editar perfil"><i class="fa-solid fa-pen"></i> Editar</a>
+            </div>
+          </div>
+
+          <div class="tab-nav">
+            <a href="?tab=resumo" class="tab-link <%= tab === 'resumo' ? 'active' : '' %>">Resumo</a>
+            <a href="?tab=faltas" class="tab-link <%= tab === 'faltas' ? 'active' : '' %>">Faltas</a>
+            <a href="?tab=horario" class="tab-link <%= tab === 'horario' ? 'active' : '' %>">Horário</a>
+            <a href="?tab=disciplinas" class="tab-link <%= tab === 'disciplinas' ? 'active' : '' %>">Disciplinas</a>
+            <a href="?tab=turmas" class="tab-link <%= tab === 'turmas' ? 'active' : '' %>">Turmas</a>
+          </div>
+
+          <% if (tab === 'resumo') { %>
+            <div class="mini-stats">
+              <div class="mini-stat">
+                <span class="mini-stat-label">Total de Faltas</span>
+                <span class="mini-stat-value"><%= totalFaltas %></span>
+              </div>
+              <div class="mini-stat">
+                <span class="mini-stat-label">Justificadas</span>
+                <span class="mini-stat-value text-success"><%= totalJustificadas %></span>
+                <span class="mini-stat-pct text-success"><%= pct(totalJustificadas) %>%</span>
+              </div>
+              <div class="mini-stat">
+                <span class="mini-stat-label">Não Justificadas</span>
+                <span class="mini-stat-value"><%= totalNaoJustificadas %></span>
+                <span class="mini-stat-pct text-danger"><%= pct(totalNaoJustificadas) %>%</span>
+              </div>
+            </div>
+
+            <div class="card inner-card">
+              <div class="card-header">
+                <h3>Registos de Faltas</h3>
+                <a href="?tab=faltas" class="link">Ver todas <i class="fa-solid fa-arrow-right"></i></a>
+              </div>
+              <% if (faltas.length === 0) { %>
+                <div class="empty-state"><i class="fa-regular fa-calendar-check"></i><p>Sem faltas registadas.</p></div>
+              <% } else { %>
+                <table class="table-compact">
+                  <thead>
+                    <tr><th>Data</th><th>Motivo</th><th>Estado</th></tr>
+                  </thead>
+                  <tbody>
+                    <% faltas.slice(0, 5).forEach(f => { %>
+                      <tr>
+                        <td><%= new Date(f.data_falta + 'T00:00:00').toLocaleDateString('pt-PT') %></td>
+                        <td><%= f.motivo || (f.tipo === 'atraso' ? 'Atraso' : 'Falta') %></td>
+                        <td>
+                          <% if (f.justificada) { %>
+                            <span class="badge badge-success">Justificada</span>
+                          <% } else { %>
+                            <span class="badge badge-danger">Não justificada</span>
+                          <% } %>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              <% } %>
+            </div>
+          <% } %>
+
+          <% if (tab === 'faltas') { %>
+            <div class="card inner-card">
+              <div class="card-header">
+                <h3>Histórico de faltas</h3>
+                <a href="/faltas?professor_id=<%= professor.id %>" class="link">Abrir em Registos <i class="fa-solid fa-arrow-right"></i></a>
+              </div>
+              <% if (faltas.length === 0) { %>
+                <div class="empty-state">
+                  <i class="fa-regular fa-calendar-check"></i>
+                  <p>Este professor ainda não tem faltas registadas.</p>
+                </div>
+              <% } else { %>
+                <div class="table-scroll">
+                  <table class="table-compact">
+                    <thead>
+                      <tr>
+                        <th>Data</th>
+                        <th>Horário</th>
+                        <th>Tipo</th>
+                        <th>Motivo</th>
+                        <th>Estado</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% faltas.forEach(f => { %>
+                        <tr>
+                          <td><%= new Date(f.data_falta + 'T00:00:00').toLocaleDateString('pt-PT') %></td>
+                          <td class="cell-muted">
+                            <% if (f.hora_inicio) { %><%= f.hora_inicio.slice(0,5) %> - <%= f.hora_fim ? f.hora_fim.slice(0,5) : '' %><% } else { %>—<% } %>
+                          </td>
+                          <td>
+                            <span class="badge <%= f.tipo === 'falta' ? 'badge-neutral' : 'badge-warning' %>">
+                              <%= f.tipo === 'falta' ? 'Falta' : 'Atraso' %>
+                            </span>
+                          </td>
+                          <td class="cell-muted"><%= f.motivo || '—' %></td>
+                          <td>
+                            <% if (f.justificada) { %>
+                              <span class="badge badge-success">Justificada</span>
+                            <% } else { %>
+                              <span class="badge badge-danger">Não justificada</span>
+                            <% } %>
+                          </td>
+                          <td>
+                            <a href="/faltas/<%= f.id %>/editar" class="btn btn-outline btn-sm btn-icon" title="Editar"><i class="fa-solid fa-pen"></i></a>
+                          </td>
+                        </tr>
+                      <% }) %>
+                    </tbody>
+                  </table>
+                </div>
+              <% } %>
+            </div>
+          <% } %>
+
+          <% if (tab === 'horario') { %>
+            <% if (turmas.length === 0 || disciplinas.length === 0) { %>
+              <div class="info-box horario-hint">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>Dica: atribua as turmas e disciplinas deste professor em <a href="/professores/<%= professor.id %>/editar"><strong>Editar</strong></a> — assim aparecem primeiro (e são escolhidas automaticamente) ao clicar na grelha.</span>
+              </div>
+            <% } %>
+            <div class="inner-grid">
+              <%- include('../partials/horario-editor', {
+                modo: 'professor',
+                fixoId: professor.id,
+                titulo: 'Horário semanal',
+                subtitulo: horarios.length + ' aula(s) por semana',
+                grelha,
+                resumo: resumoHorario,
+                opcoes: opcoesHorario,
+                redirect: '/professores/' + professor.id + '?tab=horario'
+              }) %>
+            </div>
+          <% } %>
+
+          <% if (tab === 'disciplinas') { %>
+            <div class="card inner-card">
+              <div class="card-header">
+                <h3>Disciplinas lecionadas</h3>
+                <a href="/professores/<%= professor.id %>/editar" class="link">Editar</a>
+              </div>
+              <% if (disciplinas.length === 0) { %>
+                <div class="empty-state"><i class="fa-solid fa-book-open"></i><p>Nenhuma disciplina atribuída.</p></div>
+              <% } else { %>
+                <% disciplinas.forEach(d => { %>
+                  <div class="list-row">
+                    <span class="avatar avatar-sm blue"><i class="fa-solid fa-book-open"></i></span>
+                    <span class="list-row-info">
+                      <strong><%= d.nome %></strong>
+                      <span><%= horarios.filter(h => h.disciplina_id === d.id).length %> aula(s) na grelha</span>
+                    </span>
+                  </div>
+                <% }) %>
+              <% } %>
+            </div>
+          <% } %>
+
+          <% if (tab === 'turmas') { %>
+            <div class="card inner-card">
+              <div class="card-header">
+                <h3>Turmas atribuídas</h3>
+                <a href="/professores/<%= professor.id %>/editar" class="link">Editar</a>
+              </div>
+              <% if (turmas.length === 0) { %>
+                <div class="empty-state"><i class="fa-solid fa-people-group"></i><p>Nenhuma turma atribuída.</p></div>
+              <% } else { %>
+                <% turmas.forEach(t => { %>
+                  <div class="list-row">
+                    <span class="avatar avatar-sm indigo"><i class="fa-solid fa-people-group"></i></span>
+                    <span class="list-row-info">
+                      <strong><%= t.nome %></strong>
+                      <span><%= t.ano_letivo %> · <%= horarios.filter(h => h.turma_id === t.id).length %> aula(s)</span>
+                    </span>
+                  </div>
+                <% }) %>
+              <% } %>
+            </div>
+          <% } %>
+        </div>
+
+      </main>
+    </div>
+  </div>
+  <%- include('../partials/scripts') %>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body>
+  <div class="app-layout">
+    <%- include('../partials/sidebar') %>
+
+    <div class="main-content">
+      <%- include('../partials/topbar', { pageSubtitle: 'Escolha a turma e clique num bloco da grelha para adicionar ou alterar uma aula.' }) %>
+
+      <main class="content-body">
+
+        <% if (success) { %>
+          <div class="alert alert-success"><i class="fa-solid fa-circle-check"></i> <%= success %></div>
+        <% } %>
+        <% if (error) { %>
+          <div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i> <%= error %></div>
+        <% } %>
+
+        <% if (!turma) { %>
+          <div class="card">
+            <div class="empty-state">
+              <i class="fa-solid fa-people-group"></i>
+              <p>Ainda não existem turmas. Crie uma turma para começar a montar o horário.</p>
+              <a href="/turmas/novo" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Nova Turma</a>
+            </div>
+          </div>
+        <% } else { %>
+
+          <form class="turma-picker" method="GET" action="/horarios" id="turmaPicker">
+            <div class="form-group">
+              <label for="pickerAno">Ano</label>
+              <select id="pickerAno">
+                <% anos.forEach(a => { %>
+                  <option value="<%= a %>" <%= a === turma.ano ? 'selected' : '' %>><%= a === 'outras' ? 'Outras' : a + 'º ano' %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="pickerTurma">Turma</label>
+              <select name="turma_id" id="pickerTurma">
+                <% turmas.filter(t => t.ano === turma.ano).forEach(t => { %>
+                  <option value="<%= t.id %>" <%= t.id === turma.id ? 'selected' : '' %>>
+                    <%= t.ano === 'outras' ? t.nome : 'Turma ' + t.letra %> (<%= t.total_aulas %> aulas)
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+            <noscript><button type="submit" class="btn btn-primary">Ver</button></noscript>
+          </form>
+
+          <script>
+            // Ao mudar o ano, mostra as turmas desse ano e abre a primeira; ao mudar a turma, abre-a
+            (() => {
+              const turmas = <%- JSON.stringify(turmas.map(t => ({ id: t.id, ano: t.ano, letra: t.letra, nome: t.nome, aulas: t.total_aulas }))).replace(/</g, '\\u003c') %>;
+              const form = document.getElementById('turmaPicker');
+              const selAno = document.getElementById('pickerAno');
+              const selTurma = document.getElementById('pickerTurma');
+              selAno.addEventListener('change', () => {
+                const doAno = turmas.filter((t) => t.ano === selAno.value);
+                selTurma.innerHTML = '';
+                doAno.forEach((t) => {
+                  const o = document.createElement('option');
+                  o.value = t.id;
+                  o.textContent = `${t.ano === 'outras' ? t.nome : 'Turma ' + t.letra} (${t.aulas} aulas)`;
+                  selTurma.appendChild(o);
+                });
+                if (doAno.length) form.submit();
+              });
+              selTurma.addEventListener('change', () => form.submit());
+            })();
+          </script>
+
+          <%- include('../partials/horario-editor', {
+            modo: 'turma',
+            fixoId: turma.id,
+            titulo: 'Horário do ' + turma.nome,
+            subtitulo: turma.ano_letivo,
+            redirect: ''
+          }) %>
+
+          <div class="panel-grid horario-panels">
+            <div class="card">
+              <div class="card-header">
+                <h3>Professores do <%= turma.nome %></h3>
+                <a href="/turmas" class="link">Gerir turmas <i class="fa-solid fa-arrow-right"></i></a>
+              </div>
+              <% if (professoresTurma.length === 0) { %>
+                <div class="info-box">
+                  <i class="fa-solid fa-circle-info"></i>
+                  <span>Nenhum professor está associado a esta turma. Associe professores no perfil de cada um (Editar → Turmas) para que o professor seja escolhido automaticamente.</span>
+                </div>
+              <% } else { %>
+                <% professoresTurma.forEach(p => { %>
+                  <div class="list-row">
+                    <span class="avatar avatar-sm <%= avatarCor(p.id) %>"><%= iniciais(p.nome) %></span>
+                    <span class="list-row-info">
+                      <a href="/professores/<%= p.id %>?tab=horario"><strong><%= p.nome %></strong></a>
+                      <span><%= p.disciplinas || 'Sem disciplina' %></span>
+                    </span>
+                    <span class="badge <%= p.aulas_turma ? 'badge-neutral' : 'badge-muted' %>"><%= p.aulas_turma %> aula(s)/semana</span>
+                  </div>
+                <% }) %>
+              <% } %>
+            </div>
+
+            <div class="card">
+              <div class="card-header"><h3>Como funciona</h3></div>
+              <div class="legend-item"><span class="legend-dot green"></span><div><strong>Clique num bloco vazio</strong><span>Escolha a disciplina — o professor é preenchido automaticamente.</span></div></div>
+              <div class="legend-item"><span class="legend-dot amber"></span><div><strong>Aulas de vários blocos</strong><span>Use "Termina às" para ocupar blocos seguidos (ex.: 90 minutos).</span></div></div>
+              <div class="legend-item"><span class="legend-dot red"></span><div><strong>Conflitos bloqueados</strong><span>Não é possível pôr o mesmo professor ou a mesma sala em duas turmas ao mesmo tempo.</span></div></div>
+            </div>
+          </div>
+
+        <% } %>
+
+      </main>
+    </div>
+  </div>
+  <%- include('../partials/scripts') %>
+</body>
+</html>

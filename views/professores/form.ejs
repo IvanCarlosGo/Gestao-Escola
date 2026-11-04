@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body>
+  <div class="app-layout">
+    <%- include('../partials/sidebar') %>
+
+    <div class="main-content">
+      <%- include('../partials/topbar', { pageIcon: 'fa-chalkboard-user' }) %>
+
+      <main class="content-body">
+
+        <% if (error) { %>
+          <div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i> <%= error %></div>
+        <% } %>
+
+        <div class="form-card">
+          <form method="POST" action="<%= professor.id ? '/professores/' + professor.id + '?_method=PUT' : '/professores' %>">
+            <div class="form-grid">
+              <div class="form-group full">
+                <label>Nome completo</label>
+                <input type="text" name="nome" value="<%= professor.nome || '' %>" placeholder="Ex: Ana Sofia Martins" required>
+              </div>
+
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" name="email" value="<%= professor.email || '' %>" placeholder="professor@escola.pt">
+              </div>
+
+              <div class="form-group">
+                <label>Telefone</label>
+                <input type="text" name="telefone" value="<%= professor.telefone || '' %>" placeholder="9XXXXXXXX">
+              </div>
+
+              <div class="form-group">
+                <label>Data de admissão</label>
+                <input type="date" name="data_admissao" value="<%= professor.data_admissao || '' %>">
+              </div>
+
+              <div class="form-group">
+                <label>&nbsp;</label>
+                <div class="checkbox-row">
+                  <input type="checkbox" id="ativo" name="ativo" value="1" <%= (professor.ativo === undefined || professor.ativo) ? 'checked' : '' %>>
+                  <label for="ativo">Professor ativo na escola</label>
+                </div>
+              </div>
+
+              <div class="form-group full">
+                <label>Disciplina(s) lecionada(s)</label>
+                <div class="chip-grid">
+                  <% disciplinas.forEach(d => { %>
+                    <input type="checkbox" class="chip-checkbox" id="disc-<%= d.id %>" name="disciplinas" value="<%= d.id %>"
+                      <%= selecionadas.disciplinas.map(String).includes(String(d.id)) ? 'checked' : '' %>>
+                    <label for="disc-<%= d.id %>"><%= d.nome %></label>
+                  <% }) %>
+                </div>
+              </div>
+
+              <div class="form-group full">
+                <label>Turma(s) atribuída(s) <span class="hint">(opcional)</span></label>
+                <div class="chip-grid">
+                  <% turmas.forEach(t => { %>
+                    <input type="checkbox" class="chip-checkbox" id="turma-<%= t.id %>" name="turmas" value="<%= t.id %>"
+                      <%= selecionadas.turmas.map(String).includes(String(t.id)) ? 'checked' : '' %>>
+                    <label for="turma-<%= t.id %>"><%= t.nome %></label>
+                  <% }) %>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <a href="/professores" class="btn btn-outline">Cancelar</a>
+              <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-floppy-disk"></i> Guardar
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </main>
+    </div>
+  </div>
+  <%- include('../partials/scripts') %>
+</body>
+</html>

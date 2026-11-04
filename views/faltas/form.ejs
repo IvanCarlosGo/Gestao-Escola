@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body>
+  <div class="app-layout">
+    <%- include('../partials/sidebar') %>
+
+    <div class="main-content">
+      <%- include('../partials/topbar', { hidePageHeader: true }) %>
+
+      <main class="content-body">
+
+        <div class="form-card modal-like">
+          <div class="modal-header">
+            <h3>Editar Falta</h3>
+            <a href="/faltas" class="modal-close" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></a>
+          </div>
+
+          <form method="POST" action="/faltas/<%= falta.id %>?_method=PUT" class="modal-body">
+
+            <% if (error) { %>
+              <div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i> <%= error %></div>
+            <% } %>
+
+            <div class="form-group">
+              <label>Professor <span class="req">*</span></label>
+              <select name="professor_id" required>
+                <option value="">Selecione o professor</option>
+                <% professores.forEach(p => { %>
+                  <option value="<%= p.id %>" <%= String(falta.professor_id) === String(p.id) ? 'selected' : '' %>><%= p.nome %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Data da Falta <span class="req">*</span></label>
+              <input type="date" name="data_falta" value="<%= falta.data_falta || '' %>" required>
+            </div>
+
+            <div class="form-group">
+              <label>Motivo <span class="req">*</span></label>
+              <select name="motivo" required>
+                <% if (falta.motivo && !motivosFalta.includes(falta.motivo)) { %>
+                  <option value="<%= falta.motivo %>" selected><%= falta.motivo %></option>
+                <% } %>
+                <% motivosFalta.forEach(m => { %>
+                  <option value="<%= m %>" <%= falta.motivo === m ? 'selected' : '' %>><%= m %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Observações (opcional)</label>
+              <textarea name="observacoes" maxlength="500" rows="3" placeholder="Atestado médico anexado." data-counter="formObsCounter"><%= falta.observacoes || '' %></textarea>
+              <span class="char-counter" id="formObsCounter">0/500</span>
+            </div>
+
+            <div class="radio-row">
+              <label class="radio-option success">
+                <input type="radio" name="justificada" value="1" <%= falta.justificada && falta.justificada !== '0' ? 'checked' : '' %>>
+                <span class="radio-mark"></span> Justificada
+              </label>
+              <label class="radio-option danger">
+                <input type="radio" name="justificada" value="" <%= !falta.justificada || falta.justificada === '0' ? 'checked' : '' %>>
+                <span class="radio-mark"></span> Não justificada
+              </label>
+            </div>
+
+            <details class="more-details" <%= falta.hora_inicio || falta.substituto || falta.tipo === 'atraso' ? 'open' : '' %>>
+              <summary>Mais detalhes (tipo, horário, substituto)</summary>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Tipo</label>
+                  <select name="tipo">
+                    <option value="falta" <%= falta.tipo === 'falta' || !falta.tipo ? 'selected' : '' %>>Falta</option>
+                    <option value="atraso" <%= falta.tipo === 'atraso' ? 'selected' : '' %>>Atraso</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Professor substituto</label>
+                  <input type="text" name="substituto" value="<%= falta.substituto || '' %>" placeholder="Nome do substituto">
+                </div>
+                <div class="form-group">
+                  <label>Hora de início</label>
+                  <input type="time" name="hora_inicio" value="<%= falta.hora_inicio || '' %>">
+                </div>
+                <div class="form-group">
+                  <label>Hora de fim</label>
+                  <input type="time" name="hora_fim" value="<%= falta.hora_fim || '' %>">
+                </div>
+              </div>
+            </details>
+
+            <div class="modal-actions">
+              <a href="/faltas" class="btn btn-outline">Cancelar</a>
+              <button type="submit" class="btn btn-primary">Guardar</button>
+            </div>
+          </form>
+        </div>
+
+      </main>
+    </div>
+  </div>
+  <%- include('../partials/scripts') %>
+</body>
+</html>

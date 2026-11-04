@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body>
+  <div class="app-layout">
+    <%- include('../partials/sidebar') %>
+
+    <div class="main-content">
+      <%- include('../partials/topbar', { pageIcon: 'fa-book' }) %>
+
+      <main class="content-body">
+
+        <% if (error) { %>
+          <div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i> <%= error %></div>
+        <% } %>
+
+        <div class="form-card">
+          <form method="POST" action="<%= disciplina.id ? '/disciplinas/' + disciplina.id + '?_method=PUT' : '/disciplinas' %>">
+            <div class="form-grid">
+              <div class="form-group full">
+                <label>Nome da disciplina</label>
+                <input type="text" name="nome" value="<%= disciplina.nome || '' %>" placeholder="Ex: Matemática" required>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <a href="/disciplinas" class="btn btn-outline">Cancelar</a>
+              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar</button>
+            </div>
+          </form>
+        </div>
+
+      </main>
+    </div>
+  </div>
+  <%- include('../partials/scripts') %>
+</body>
+</html>

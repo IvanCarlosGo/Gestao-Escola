@@ -1,0 +1,315 @@
+<%#
+  Grelha semanal editável, partilhada pela página Horários (modo 'turma') e pelo perfil do professor (modo 'professor').
+  Parâmetros: modo, fixoId, titulo, subtitulo, grelha, slots, diasSemana, resumo, opcoes, redirect
+%>
+<%
+  const porProfessor = modo === 'professor';
+  const paleta = [
+    ['#e7efea', '#b9cfc1', '#223C2F'], ['#eff4ff', '#c7d7fe', '#1e40af'],
+    ['#f5f3ff', '#ddd6fe', '#5b21b6'], ['#fff7ed', '#fed7aa', '#9a3412'],
+    ['#ecfeff', '#a5f3fc', '#155e75'], ['#fff1f2', '#fecdd3', '#9f1239']
+  ];
+  const cor = (a) => paleta[a.disciplina_id % paleta.length];
+  const hhmm = (h) => String(h || '').slice(0, 5);
+  const dadosAula = (a) => JSON.stringify({
+    id: a.id, disciplina_id: a.disciplina_id, professor_id: a.professor_id, turma_id: a.turma_id,
+    dia_semana: a.dia_semana, hora_inicio: hhmm(a.hora_inicio), hora_fim: hhmm(a.hora_fim), sala: a.sala || ''
+  });
+%>
+
+<div class="card grid-card">
+  <div class="card-header">
+    <h3><%= titulo %><% if (subtitulo) { %> <span class="cell-muted grid-subtitle">· <%= subtitulo %></span><% } %></h3>
+    <div class="grid-header-actions">
+      <span class="grid-progress">
+        <span class="grid-progress-bar"><span style="width: <%= Math.round((resumo.blocosOcupados / resumo.totalBlocos) * 100) %>%"></span></span>
+        <%= resumo.blocosOcupados %> de <%= resumo.totalBlocos %> blocos preenchidos
+      </span>
+      <button type="button" class="btn btn-outline btn-sm" onclick="window.print()"><i class="fa-solid fa-print"></i> Imprimir</button>
+    </div>
+  </div>
+
+  <div class="schedule-wrap">
+    <table class="schedule-grid editor-grid">
+      <thead>
+        <tr>
+          <th></th>
+          <% diasSemana.forEach(d => { %><th><%= d.label.replace('-feira', '') %></th><% }) %>
+        </tr>
+      </thead>
+      <tbody>
+        <% slots.forEach(slot => { %>
+          <% if (slot.intervalo) { %>
+            <tr class="schedule-row-break">
+              <td class="schedule-time-cell"><%= slot.inicio %>–<%= slot.fim %></td>
+              <td colspan="<%= diasSemana.length %>">Intervalo</td>
+            </tr>
+          <% } else { %>
+            <tr>
+              <td class="schedule-time-cell"><%= slot.inicio %><br><span><%= slot.fim %></span></td>
+              <% diasSemana.forEach(d => {
+                   const ocupam = grelha[d.key][slot.inicio];
+              %>
+                <td class="editor-cell <%= ocupam.length > 1 ? 'has-conflict' : '' %>">
+                  <% if (ocupam.length === 0) { %>
+                    <button type="button" class="cell-add" data-nova-aula data-dia="<%= d.key %>" data-inicio="<%= slot.inicio %>"
+                            aria-label="Adicionar aula: <%= d.label %>, <%= slot.inicio %>">
+                      <i class="fa-solid fa-plus"></i>
+                    </button>
+                  <% } else { %>
+                    <% if (ocupam.length > 1) { %>
+                      <span class="conflict-flag" title="<%= porProfessor ? 'O professor tem duas aulas no mesmo bloco' : 'Duas aulas da turma no mesmo bloco' %>">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Conflito
+                      </span>
+                    <% } %>
+                    <% ocupam.forEach(a => { const c = cor(a); %>
+                      <button type="button" class="lesson <%= a.comecaAqui ? '' : 'lesson-cont' %>" data-editar-aula='<%= dadosAula(a) %>'
+                              style="--lesson-bg: <%= c[0] %>; --lesson-border: <%= c[1] %>; --lesson-text: <%= c[2] %>;">
+                        <% if (a.comecaAqui) { %>
+                          <strong><%= a.disciplina_nome %></strong>
+                          <span><%= porProfessor ? a.turma_nome : a.professor_nome %></span>
+                          <% if (a.sala) { %><span class="lesson-room"><i class="fa-solid fa-door-open"></i> <%= a.sala %></span><% } %>
+                        <% } else { %>
+                          <span class="lesson-cont-label"><i class="fa-solid fa-arrow-turn-up fa-rotate-90"></i> <%= a.disciplina_nome %> (cont.)</span>
+                        <% } %>
+                      </button>
+                    <% }) %>
+                  <% } %>
+                </td>
+              <% }) %>
+            </tr>
+          <% } %>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal adicionar / editar aula -->
+<div class="modal-backdrop" id="aulaModal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="aulaModalTitulo">
+    <div class="modal-header">
+      <div>
+        <h3 id="aulaModalTitulo">Nova aula</h3>
+        <p class="modal-subtitle" id="aulaModalQuando"></p>
+      </div>
+      <button type="button" class="modal-close" data-fechar-aula aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <form method="POST" action="/horarios" class="modal-body" id="aulaForm">
+      <input type="hidden" name="<%= porProfessor ? 'professor_id' : 'turma_id' %>" value="<%= fixoId %>">
+      <input type="hidden" name="dia_semana" id="aulaDia">
+      <input type="hidden" name="hora_inicio" id="aulaInicio">
+      <% if (redirect) { %><input type="hidden" name="redirect" value="<%= redirect %>"><% } %>
+
+      <% if (porProfessor) { %>
+        <div class="form-group">
+          <label>Turma <span class="req">*</span></label>
+          <select name="turma_id" id="aulaTurma" required></select>
+        </div>
+      <% } %>
+
+      <div class="form-group">
+        <label>Disciplina <span class="req">*</span></label>
+        <select name="disciplina_id" id="aulaDisciplina" required></select>
+        <% if (porProfessor) { %><span class="field-hint" id="aulaDisciplinaHint"></span><% } %>
+      </div>
+
+      <% if (!porProfessor) { %>
+        <div class="form-group">
+          <label>Professor <span class="req">*</span></label>
+          <select name="professor_id" id="aulaProfessor" required></select>
+          <span class="field-hint" id="aulaProfessorHint"></span>
+        </div>
+      <% } %>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Termina às <span class="req">*</span></label>
+          <select name="hora_fim" id="aulaFim" required></select>
+        </div>
+        <div class="form-group">
+          <label>Sala</label>
+          <input type="text" name="sala" id="aulaSala" placeholder="Ex: Sala 12" maxlength="30">
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="submit" form="aulaDeleteForm" class="btn btn-danger-ghost modal-delete" id="aulaEliminar" hidden>
+          <i class="fa-regular fa-trash-can"></i> Eliminar
+        </button>
+        <button type="button" class="btn btn-outline" data-fechar-aula>Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>
+    <form method="POST" id="aulaDeleteForm" data-confirm="Eliminar esta aula do horário?">
+      <% if (redirect) { %><input type="hidden" name="redirect" value="<%= redirect %>"><% } %>
+    </form>
+  </div>
+</div>
+
+<script>
+  (() => {
+    const modo = <%- JSON.stringify(modo) %>;
+    const opcoes = <%- JSON.stringify(opcoes).replace(/</g, '\\u003c') %>;
+    const slots = <%- JSON.stringify(slots) %>;
+    const dias = <%- JSON.stringify(diasSemana) %>;
+
+    const modal = document.getElementById('aulaModal');
+    const form = document.getElementById('aulaForm');
+    const deleteForm = document.getElementById('aulaDeleteForm');
+    const titulo = document.getElementById('aulaModalTitulo');
+    const quando = document.getElementById('aulaModalQuando');
+    const selDisc = document.getElementById('aulaDisciplina');
+    const selFim = document.getElementById('aulaFim');
+    const btnEliminar = document.getElementById('aulaEliminar');
+
+    function opcao(value, texto, selecionada) {
+      const o = document.createElement('option');
+      o.value = value;
+      o.textContent = texto;
+      if (selecionada) o.selected = true;
+      return o;
+    }
+
+    function grupo(label, itens) {
+      const g = document.createElement('optgroup');
+      g.label = label;
+      itens.forEach((i) => g.appendChild(i));
+      return g;
+    }
+
+    // Preenche um select com dois grupos (os "principais" primeiro); escolhe sozinho se só houver um principal
+    function preencherAgrupado(select, itens, { vazio, labelPrincipais, labelOutros, selecionado }) {
+      select.innerHTML = '';
+      const principais = itens.filter((i) => i.principal);
+      const outros = itens.filter((i) => !i.principal);
+      const escolhido = selecionado || (principais.length === 1 ? principais[0].id : '');
+      const mk = (i) => opcao(i.id, i.nome, String(i.id) === String(escolhido));
+      select.appendChild(opcao('', vazio, !escolhido));
+      if (principais.length) select.appendChild(grupo(labelPrincipais, principais.map(mk)));
+      if (outros.length) select.appendChild(grupo(principais.length ? labelOutros : 'Todas', outros.map(mk)));
+      return { auto: !selecionado && Boolean(escolhido), temPrincipais: principais.length > 0 };
+    }
+
+    // ---- Modo turma: disciplina -> professor (preenchido automaticamente) ----
+    const selProf = document.getElementById('aulaProfessor');
+    const hintProf = document.getElementById('aulaProfessorHint');
+
+    function preencherProfessores(selecionado) {
+      const nomeProf = Object.fromEntries(opcoes.professores.map((p) => [p.id, p.nome]));
+      const daTurma = new Set(opcoes.professoresTurma);
+      const disc = opcoes.disciplinas.find((d) => String(d.id) === selDisc.value);
+      selProf.innerHTML = '';
+      hintProf.textContent = '';
+      if (!disc) {
+        selProf.appendChild(opcao('', 'Escolha primeiro a disciplina'));
+        selProf.disabled = true;
+        return;
+      }
+      selProf.disabled = false;
+
+      const daDisc = disc.professores.filter((id) => nomeProf[id]);
+      const turmaDisc = daDisc.filter((id) => daTurma.has(id));
+      const outrosDisc = daDisc.filter((id) => !daTurma.has(id));
+      const restantes = opcoes.professores.map((p) => p.id).filter((id) => !daDisc.includes(id));
+
+      let escolhido = selecionado;
+      if (!escolhido && turmaDisc.length === 1) escolhido = turmaDisc[0];
+      else if (!escolhido && turmaDisc.length === 0 && daDisc.length === 1) escolhido = daDisc[0];
+
+      const mk = (id) => opcao(id, nomeProf[id], String(id) === String(escolhido));
+      selProf.appendChild(opcao('', 'Selecione o professor', !escolhido));
+      if (turmaDisc.length) selProf.appendChild(grupo('Professores desta turma', turmaDisc.map(mk)));
+      if (outrosDisc.length) selProf.appendChild(grupo(turmaDisc.length ? 'Outros professores da disciplina' : 'Professores da disciplina', outrosDisc.map(mk)));
+      if (restantes.length) selProf.appendChild(grupo('Todos os outros', restantes.map(mk)));
+
+      if (!selecionado && escolhido) hintProf.textContent = 'Preenchido automaticamente — pode alterar.';
+      else if (!daDisc.length) hintProf.textContent = 'Nenhum professor tem esta disciplina atribuída.';
+    }
+
+    // ---- Modo professor: turma + disciplina (as do professor primeiro) ----
+    const selTurma = document.getElementById('aulaTurma');
+    const hintDisc = document.getElementById('aulaDisciplinaHint');
+
+    function preencherCamposProfessor(aula) {
+      preencherAgrupado(selTurma, opcoes.turmas, {
+        vazio: 'Selecione a turma', labelPrincipais: 'Turmas do professor', labelOutros: 'Outras turmas', selecionado: aula.turma_id
+      });
+      const disc = preencherAgrupado(selDisc, opcoes.disciplinas, {
+        vazio: 'Selecione a disciplina', labelPrincipais: 'Disciplinas do professor', labelOutros: 'Outras disciplinas', selecionado: aula.disciplina_id
+      });
+      hintDisc.textContent = disc.auto ? 'Preenchida automaticamente — pode alterar.' : '';
+    }
+
+    function preencherDisciplinasTurma(selecionada) {
+      preencherAgrupado(selDisc, opcoes.disciplinas, {
+        vazio: 'Selecione a disciplina', labelPrincipais: 'Disciplinas desta turma', labelOutros: 'Outras disciplinas', selecionado: selecionada
+      });
+    }
+
+    // Opções de fim: blocos seguidos a partir do início, até ao próximo intervalo
+    function preencherFim(inicio, fimAtual) {
+      selFim.innerHTML = '';
+      const fins = [];
+      let k = slots.findIndex((s) => s.inicio === inicio && !s.intervalo);
+      if (k >= 0) {
+        fins.push(slots[k].fim);
+        for (k++; k < slots.length && !slots[k].intervalo && slots[k].inicio === slots[k - 1].fim; k++) {
+          fins.push(slots[k].fim);
+        }
+      }
+      fins.forEach((f, n) => {
+        selFim.appendChild(opcao(f, `${f} (${n + 1} bloco${n ? 's' : ''})`, f === (fimAtual || fins[0])));
+      });
+      // Aula antiga com uma hora de fim fora dos blocos: mantém-se como opção
+      if (fimAtual && !fins.includes(fimAtual)) selFim.appendChild(opcao(fimAtual, fimAtual, true));
+    }
+
+    function abrir(aula) {
+      const editar = Boolean(aula.id);
+      const dia = dias.find((d) => d.key === aula.dia_semana);
+      titulo.textContent = editar ? 'Editar aula' : 'Nova aula';
+      quando.textContent = `${dia ? dia.label : ''} · ${aula.hora_inicio}`;
+
+      document.getElementById('aulaDia').value = aula.dia_semana;
+      document.getElementById('aulaInicio').value = aula.hora_inicio;
+      document.getElementById('aulaSala').value = aula.sala || '';
+
+      if (modo === 'professor') {
+        preencherCamposProfessor(aula);
+      } else {
+        preencherDisciplinasTurma(aula.disciplina_id);
+        preencherProfessores(aula.professor_id);
+      }
+      preencherFim(aula.hora_inicio, aula.hora_fim);
+
+      form.action = editar ? `/horarios/${aula.id}?_method=PUT` : '/horarios';
+      deleteForm.action = editar ? `/horarios/${aula.id}?_method=DELETE` : '';
+      btnEliminar.hidden = !editar;
+
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+      (modo === 'professor' ? selTurma : selDisc).focus();
+    }
+
+    function fechar() {
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+
+    if (modo !== 'professor') selDisc.addEventListener('change', () => preencherProfessores());
+
+    document.querySelectorAll('[data-nova-aula]').forEach((btn) => {
+      btn.addEventListener('click', () => abrir({ dia_semana: btn.dataset.dia, hora_inicio: btn.dataset.inicio }));
+    });
+
+    document.querySelectorAll('[data-editar-aula]').forEach((btn) => {
+      btn.addEventListener('click', () => abrir(JSON.parse(btn.dataset.editarAula)));
+    });
+
+    modal.querySelectorAll('[data-fechar-aula]').forEach((el) => el.addEventListener('click', fechar));
+    modal.addEventListener('click', (e) => { if (e.target === modal) fechar(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fechar(); });
+  })();
+</script>

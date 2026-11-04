@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body>
+  <div class="app-layout">
+    <%- include('../partials/sidebar') %>
+
+    <div class="main-content">
+      <%- include('../partials/topbar', { pageIcon: 'fa-book', pageSubtitle: 'Gere o catálogo de disciplinas lecionadas na escola.' }) %>
+
+      <main class="content-body">
+
+        <% if (success) { %>
+          <div class="alert alert-success"><i class="fa-solid fa-circle-check"></i> <%= success %></div>
+        <% } %>
+        <% if (error) { %>
+          <div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i> <%= error %></div>
+        <% } %>
+
+        <div class="page-toolbar">
+          <div class="page-subtitle">Total: <%= disciplinas.length %> disciplina(s)</div>
+          <a href="/disciplinas/novo" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Nova Disciplina</a>
+        </div>
+
+        <% if (disciplinas.length === 0) { %>
+          <div class="table-wrap">
+            <div class="empty-state">
+              <i class="fa-solid fa-book"></i>
+              <p>Ainda não existem disciplinas registadas.</p>
+              <a href="/disciplinas/novo" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Adicionar Disciplina</a>
+            </div>
+          </div>
+        <% } else { %>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Disciplina</th>
+                  <th>Professores</th>
+                  <th>Aulas na grelha</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% disciplinas.forEach(d => { %>
+                  <tr>
+                    <td class="cell-name"><%= d.nome %></td>
+                    <td><span class="badge badge-neutral"><%= d.total_professores %></span></td>
+                    <td><span class="badge badge-muted"><%= d.total_aulas %></span></td>
+                    <td>
+                      <div class="actions-cell">
+                        <a href="/disciplinas/<%= d.id %>/editar" class="btn btn-outline btn-sm" title="Editar">
+                          <i class="fa-solid fa-pen"></i>
+                        </a>
+                        <form action="/disciplinas/<%= d.id %>?_method=DELETE" method="POST" data-confirm="Eliminar esta disciplina?">
+                          <button type="submit" class="btn btn-danger-ghost btn-sm" title="Eliminar">
+                            <i class="fa-solid fa-trash"></i>
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+
+      </main>
+    </div>
+  </div>
+  <%- include('../partials/scripts') %>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<header class="topbar">
+  <button class="menu-toggle" id="menuToggle" aria-label="Abrir menu">
+    <i class="fa-solid fa-bars"></i>
+  </button>
+
+  <form class="topbar-search" action="/professores" method="GET">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="text" name="q" placeholder="Pesquisar professor...">
+  </form>
+
+  <div class="topbar-actions">
+    <button class="topbar-icon-btn" type="button" aria-label="Notificações">
+      <i class="fa-regular fa-bell"></i>
+    </button>
+
+    <div class="topbar-date">
+      <span id="dataAtual"></span>
+      <i class="fa-solid fa-chevron-down"></i>
+    </div>
+  </div>
+</header>
+
+<% if (typeof hidePageHeader === 'undefined' || !hidePageHeader) { %>
+  <div class="page-header">
+    <div>
+      <h1><%= pageTitle %></h1>
+      <% if (typeof pageSubtitle !== 'undefined' && pageSubtitle) { %>
+        <p><%= pageSubtitle %></p>
+      <% } %>
+    </div>
+    <% if (typeof pageAction !== 'undefined' && pageAction) { %>
+      <div class="page-header-actions"><%- pageAction %></div>
+    <% } %>
+  </div>
+<% } %>

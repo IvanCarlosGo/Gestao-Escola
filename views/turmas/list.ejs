@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body>
+  <div class="app-layout">
+    <%- include('../partials/sidebar') %>
+
+    <div class="main-content">
+      <%- include('../partials/topbar', { pageIcon: 'fa-people-group', pageSubtitle: 'Gere as turmas da escola e consulta quantos professores e aulas cada uma tem.' }) %>
+
+      <main class="content-body">
+
+        <% if (success) { %>
+          <div class="alert alert-success"><i class="fa-solid fa-circle-check"></i> <%= success %></div>
+        <% } %>
+        <% if (error) { %>
+          <div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i> <%= error %></div>
+        <% } %>
+
+        <div class="page-toolbar">
+          <div class="page-subtitle">Total: <%= turmas.length %> turma(s)</div>
+          <a href="/turmas/novo" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Nova Turma</a>
+        </div>
+
+        <% if (turmas.length === 0) { %>
+          <div class="table-wrap">
+            <div class="empty-state">
+              <i class="fa-solid fa-people-group"></i>
+              <p>Ainda não existem turmas registadas.</p>
+              <a href="/turmas/novo" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Adicionar Turma</a>
+            </div>
+          </div>
+        <% } else { %>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Turma</th>
+                  <th>Ano letivo</th>
+                  <th>Professores</th>
+                  <th>Aulas na grelha</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% turmas.forEach(t => { %>
+                  <tr>
+                    <td class="cell-name"><%= t.nome %></td>
+                    <td class="cell-muted"><%= t.ano_letivo %></td>
+                    <td><span class="badge badge-neutral"><%= t.total_professores %></span></td>
+                    <td><span class="badge badge-muted"><%= t.total_aulas %></span></td>
+                    <td>
+                      <div class="actions-cell">
+                        <a href="/turmas/<%= t.id %>/editar" class="btn btn-outline btn-sm" title="Editar">
+                          <i class="fa-solid fa-pen"></i>
+                        </a>
+                        <form action="/turmas/<%= t.id %>?_method=DELETE" method="POST" data-confirm="Eliminar esta turma?">
+                          <button type="submit" class="btn btn-danger-ghost btn-sm" title="Eliminar">
+                            <i class="fa-solid fa-trash"></i>
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+
+      </main>
+    </div>
+  </div>
+  <%- include('../partials/scripts') %>
+</body>
+</html>

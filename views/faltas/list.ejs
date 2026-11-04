@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body>
+  <div class="app-layout">
+    <%- include('../partials/sidebar') %>
+
+    <div class="main-content">
+      <%- include('../partials/topbar', { pageIcon: 'fa-clock-rotate-left', pageSubtitle: 'Consulte, filtre e faça a gestão de todas as faltas registadas.' }) %>
+
+      <main class="content-body">
+
+        <% if (success) { %>
+          <div class="alert alert-success"><i class="fa-solid fa-circle-check"></i> <%= success %></div>
+        <% } %>
+        <% if (error) { %>
+          <div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i> <%= error %></div>
+        <% } %>
+
+        <div class="page-toolbar">
+          <div class="page-subtitle">Total: <%= faltas.length %> registo(s) · as faltas são registadas pela aplicação móvel</div>
+          <a href="/relatorios" class="btn btn-outline"><i class="fa-regular fa-file-pdf"></i> Gerar relatório</a>
+        </div>
+
+        <form class="filters-bar" method="GET" action="/faltas">
+          <select name="professor_id">
+            <option value="">Todos os professores</option>
+            <% professores.forEach(p => { %>
+              <option value="<%= p.id %>" <%= String(filtros.professor_id) === String(p.id) ? 'selected' : '' %>><%= p.nome %></option>
+            <% }) %>
+          </select>
+
+          <select name="tipo">
+            <option value="">Todos os tipos</option>
+            <option value="falta" <%= filtros.tipo === 'falta' ? 'selected' : '' %>>Falta</option>
+            <option value="atraso" <%= filtros.tipo === 'atraso' ? 'selected' : '' %>>Atraso</option>
+          </select>
+
+          <select name="status">
+            <option value="">Todos os estados</option>
+            <option value="justificada" <%= filtros.status === 'justificada' ? 'selected' : '' %>>Justificadas</option>
+            <option value="injustificada" <%= filtros.status === 'injustificada' ? 'selected' : '' %>>Por justificar</option>
+          </select>
+
+          <input type="date" name="data_inicio" value="<%= filtros.data_inicio || '' %>">
+          <input type="date" name="data_fim" value="<%= filtros.data_fim || '' %>">
+
+          <div class="filters-actions">
+            <a href="/faltas" class="btn btn-soft btn-sm"><i class="fa-solid fa-rotate-left"></i> Limpar</a>
+            <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-filter"></i> Filtrar</button>
+          </div>
+        </form>
+
+        <% if (faltas.length === 0) { %>
+          <div class="table-wrap">
+            <div class="empty-state">
+              <i class="fa-regular fa-calendar-check"></i>
+              <p>Nenhuma falta encontrada para os filtros selecionados.</p>
+            </div>
+          </div>
+        <% } else { %>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Professor</th>
+                  <th>Data</th>
+                  <th>Horário</th>
+                  <th>Tipo</th>
+                  <th>Motivo</th>
+                  <th>Estado</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% faltas.forEach(f => { %>
+                  <tr>
+                    <td>
+                      <a href="/professores/<%= f.professor_id %>" class="person-cell">
+                        <div class="avatar-sm"><%= f.professor_nome.charAt(0) %></div>
+                        <div>
+                          <div class="cell-name"><%= f.professor_nome %></div>
+                          <div class="cell-muted" style="font-size:12px;"><%= f.disciplinas || '—' %></div>
+                        </div>
+                      </a>
+                    </td>
+                    <td class="cell-muted"><%= new Date(f.data_falta).toLocaleDateString('pt-PT') %></td>
+                    <td class="cell-muted">
+                      <% if (f.hora_inicio) { %><%= f.hora_inicio.slice(0,5) %> - <%= f.hora_fim ? f.hora_fim.slice(0,5) : '' %><% } else { %>—<% } %>
+                    </td>
+                    <td>
+                      <span class="badge <%= f.tipo === 'falta' ? 'badge-neutral' : 'badge-warning' %>">
+                        <%= f.tipo === 'falta' ? 'Falta' : 'Atraso' %>
+                      </span>
+                    </td>
+                    <td class="cell-muted"><%= f.motivo || '—' %></td>
+                    <td>
+                      <form action="/faltas/<%= f.id %>/justificar" method="POST">
+                        <button type="submit" class="badge <%= f.justificada ? 'badge-success' : 'badge-danger' %>" style="border:none; cursor:pointer;">
+                          <i class="fa-solid <%= f.justificada ? 'fa-check' : 'fa-xmark' %>"></i>
+                          <%= f.justificada ? 'Justificada' : 'Por justificar' %>
+                        </button>
+                      </form>
+                    </td>
+                    <td>
+                      <div class="actions-cell">
+                        <a href="/faltas/<%= f.id %>/editar" class="btn btn-outline btn-sm" title="Editar">
+                          <i class="fa-solid fa-pen"></i>
+                        </a>
+                        <form action="/faltas/<%= f.id %>?_method=DELETE" method="POST" data-confirm="Eliminar esta falta?">
+                          <button type="submit" class="btn btn-danger-ghost btn-sm" title="Eliminar">
+                            <i class="fa-solid fa-trash"></i>
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+
+      </main>
+    </div>
+  </div>
+  <%- include('../partials/scripts') %>
+</body>
+</html>

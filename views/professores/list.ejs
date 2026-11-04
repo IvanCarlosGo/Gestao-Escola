@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body>
+  <div class="app-layout">
+    <%- include('../partials/sidebar') %>
+
+    <div class="main-content">
+      <%- include('../partials/topbar', {
+        pageSubtitle: 'Lista de todos os professores da escola.',
+        pageAction: '<a href="/professores/novo" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Novo Professor</a>'
+      }) %>
+
+      <main class="content-body">
+
+        <% if (success) { %>
+          <div class="alert alert-success"><i class="fa-solid fa-circle-check"></i> <%= success %></div>
+        <% } %>
+        <% if (error) { %>
+          <div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i> <%= error %></div>
+        <% } %>
+
+        <% if (termo) { %>
+          <div class="filter-chip">
+            Resultados para "<strong><%= termo %></strong>"
+            <a href="/professores" title="Limpar pesquisa"><i class="fa-solid fa-xmark"></i></a>
+          </div>
+        <% } %>
+
+        <div class="table-wrap has-menus">
+          <% if (professores.length === 0) { %>
+            <div class="empty-state">
+              <i class="fa-solid fa-user-group"></i>
+              <p>Nenhum professor encontrado.</p>
+              <a href="/professores/novo" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Adicionar Professor</a>
+            </div>
+          <% } else { %>
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Disciplina(s)</th>
+                  <th>Faltas (Mês) <i class="fa-solid fa-arrow-down sort-icon"></i></th>
+                  <th>Assiduidade <i class="fa-solid fa-arrow-down sort-icon"></i></th>
+                  <th class="th-actions">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% professores.forEach(p => { %>
+                  <tr>
+                    <td>
+                      <a href="/professores/<%= p.id %>" class="person-cell">
+                        <span class="avatar avatar-sm <%= avatarCor(p.id) %>"><%= iniciais(p.nome) %></span>
+                        <span class="cell-name"><%= p.nome %></span>
+                        <% if (!p.ativo) { %><span class="badge badge-muted">Inativo</span><% } %>
+                      </a>
+                    </td>
+                    <td class="cell-muted"><%= p.disciplinas || '—' %></td>
+                    <td class="<%= p.faltas_mes >= 2 ? 'text-danger' : p.faltas_mes === 1 ? 'text-danger-soft' : '' %>"><%= p.faltas_mes %></td>
+                    <td><%= p.assiduidade %>%</td>
+                    <td class="th-actions">
+                      <details class="row-menu">
+                        <summary class="kebab-btn" aria-label="Ações"><i class="fa-solid fa-ellipsis-vertical"></i></summary>
+                        <div class="row-menu-list">
+                          <a href="/professores/<%= p.id %>"><i class="fa-regular fa-eye"></i> Ver detalhe</a>
+                          <a href="/professores/<%= p.id %>?tab=horario"><i class="fa-regular fa-calendar"></i> Horário</a>
+                          <a href="/professores/<%= p.id %>/editar"><i class="fa-solid fa-pen"></i> Editar</a>
+                          <form action="/professores/<%= p.id %>?_method=DELETE" method="POST" data-confirm="Eliminar este professor e todas as suas faltas?">
+                            <button type="submit" class="danger"><i class="fa-regular fa-trash-can"></i> Eliminar</button>
+                          </form>
+                        </div>
+                      </details>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+
+            <%
+              const linkPagina = (n) => '/professores?' + new URLSearchParams(Object.assign({}, termo ? { q: termo } : {}, { page: n })).toString();
+            %>
+            <div class="pagination">
+              <div class="pagination-info">Mostrando <%= paginacao.de %>–<%= paginacao.ate %> de <%= paginacao.total %></div>
+              <div class="pagination-controls">
+                <a href="<%= linkPagina(paginacao.pagina - 1) %>" class="page-btn <%= paginacao.pagina === 1 ? 'disabled' : '' %>" aria-label="Anterior"><i class="fa-solid fa-chevron-left"></i></a>
+                <% for (let n = 1; n <= paginacao.totalPaginas; n++) { %>
+                  <a href="<%= linkPagina(n) %>" class="page-btn <%= n === paginacao.pagina ? 'active' : '' %>"><%= n %></a>
+                <% } %>
+                <a href="<%= linkPagina(paginacao.pagina + 1) %>" class="page-btn <%= paginacao.pagina === paginacao.totalPaginas ? 'disabled' : '' %>" aria-label="Seguinte"><i class="fa-solid fa-chevron-right"></i></a>
+              </div>
+            </div>
+          <% } %>
+        </div>
+
+      </main>
+    </div>
+  </div>
+  <%- include('../partials/scripts') %>
+</body>
+</html>

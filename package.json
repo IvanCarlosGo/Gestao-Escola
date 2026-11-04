@@ -1,0 +1,29 @@
+{
+  "name": "gestao-escolar-faltas",
+  "version": "1.0.0",
+  "description": "Sistema de gestao de faltas de professores - Node.js + EJS + MySQL (Docker)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "escola",
+    "faltas",
+    "professores",
+    "gestao"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.19.2",
+    "method-override": "^3.0.0",
+    "mysql2": "^3.11.3",
+    "pdfkit": "^0.15.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}

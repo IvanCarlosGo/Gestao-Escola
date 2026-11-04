@@ -1,0 +1,56 @@
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon"><img src="/img/logo.jpg" alt="Logótipo E.S.P.C.R"></div>
+    <div class="brand-text">
+      <strong>Gestão Escolar</strong>
+      <span>Faltas dos Professores</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="/" class="nav-item <%= activePage === 'dashboard' ? 'active' : '' %>">
+      <span class="nav-icon"><i class="fa-solid fa-house"></i></span>
+      <span>Dashboard</span>
+    </a>
+    <a href="/professores" class="nav-item <%= activePage === 'professores' ? 'active' : '' %>">
+      <span class="nav-icon"><i class="fa-solid fa-user-group"></i></span>
+      <span>Professores</span>
+    </a>
+    <a href="/faltas" class="nav-item <%= activePage === 'historico' ? 'active' : '' %>">
+      <span class="nav-icon"><i class="fa-regular fa-clock"></i></span>
+      <span>Registos de Faltas</span>
+    </a>
+    <a href="/relatorios" class="nav-item <%= activePage === 'relatorios' ? 'active' : '' %>">
+      <span class="nav-icon"><i class="fa-solid fa-chart-simple"></i></span>
+      <span>Relatórios</span>
+    </a>
+    <a href="/horarios" class="nav-item <%= activePage === 'horarios' ? 'active' : '' %>">
+      <span class="nav-icon"><i class="fa-regular fa-calendar"></i></span>
+      <span>Horários</span>
+    </a>
+    <a href="/turmas" class="nav-item <%= activePage === 'turmas' ? 'active' : '' %>">
+      <span class="nav-icon"><i class="fa-solid fa-people-group"></i></span>
+      <span>Turmas</span>
+    </a>
+    <a href="/disciplinas" class="nav-item <%= activePage === 'disciplinas' ? 'active' : '' %>">
+      <span class="nav-icon"><i class="fa-solid fa-book-open"></i></span>
+      <span>Disciplinas</span>
+    </a>
+    <a href="/configuracoes" class="nav-item <%= activePage === 'configuracoes' ? 'active' : '' %>">
+      <span class="nav-icon"><i class="fa-solid fa-gear"></i></span>
+      <span>Definições</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <span class="user-avatar">IG</span>
+      <span class="user-info">
+        <strong>Ivan Gonçalves</strong>
+        <span>Administrador</span>
+      </span>
+      <a href="/" class="user-logout" title="Terminar sessão"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+    </div>
+  </div>
+</aside>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
