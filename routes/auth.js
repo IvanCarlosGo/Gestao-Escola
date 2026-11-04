@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/db');
 const {
-  verificarPalavraPasse, criarSessao, terminarSessao, bloqueado, registarFalha, limparFalhas
+  PERFIS_WEB, verificarPalavraPasse, criarSessao, terminarSessao, bloqueado, registarFalha, limparFalhas
 } = require('../config/auth');
 
 // Só aceita destinos internos depois do login (evita redirecionar para outro site)
@@ -25,12 +25,19 @@ router.post('/login', async (req, res, next) => {
     if (minutos) return voltar(`Demasiadas tentativas falhadas. Tente novamente dentro de ${minutos} min.`);
 
     const [[utilizador]] = await pool.query(
-      'SELECT id, palavra_passe FROM utilizadores WHERE email = ? AND ativo = 1', [email]
+      `SELECT u.id, u.palavra_passe, u.perfil, e.ativo AS escola_ativa
+       FROM utilizadores u JOIN escolas e ON e.id = u.escola_id
+       WHERE u.email = ? AND u.ativo = 1`, [email]
     );
 
     if (!utilizador || !verificarPalavraPasse(palavraPasse, utilizador.palavra_passe)) {
       registarFalha(chave);
       return voltar('Email ou palavra-passe incorretos.');
+    }
+    // Só depois de a palavra-passe estar certa, para não revelar que contas existem
+    if (!utilizador.escola_ativa) return voltar('O acesso da sua escola está suspenso. Contacte o administrador da plataforma.');
+    if (!PERFIS_WEB.includes(utilizador.perfil)) {
+      return voltar('As contas de Contínuo usam apenas a aplicação móvel para registar faltas.');
     }
 
     limparFalhas(chave);

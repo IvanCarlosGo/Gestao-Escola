@@ -19,15 +19,15 @@ function redirectGrelha(req, res, turmaId, chave, mensagem) {
 }
 
 // Devolve uma mensagem de erro se a aula colidir com outra da turma, do professor ou da sala
-async function verificarConflitos({ id, turma_id, professor_id, dia_semana, hora_inicio, hora_fim, sala }) {
+async function verificarConflitos(escolaId, { id, turma_id, professor_id, dia_semana, hora_inicio, hora_fim, sala }) {
   const [sobrepostas] = await pool.query(
     `SELECT h.*, p.nome AS professor_nome, d.nome AS disciplina_nome, t.nome AS turma_nome
      FROM horarios h
      JOIN professores p ON p.id = h.professor_id
      JOIN disciplinas d ON d.id = h.disciplina_id
      JOIN turmas t ON t.id = h.turma_id
-     WHERE h.dia_semana = ? AND h.hora_inicio < ? AND h.hora_fim > ? AND h.id <> ?`,
-    [dia_semana, hora_fim, hora_inicio, id || 0]
+     WHERE h.escola_id = ? AND h.dia_semana = ? AND h.hora_inicio < ? AND h.hora_fim > ? AND h.id <> ?`,
+    [escolaId, dia_semana, hora_fim, hora_inicio, id || 0]
   );
 
   const intervalo = (h) => `${hhmm(h.hora_inicio)}–${hhmm(h.hora_fim)}`;
@@ -53,6 +53,18 @@ async function verificarConflitos({ id, turma_id, professor_id, dia_semana, hora
   return null;
 }
 
+// Professor, disciplina e turma têm de pertencer à escola de quem guarda a aula
+async function daEscola(escolaId, { professor_id, disciplina_id, turma_id }) {
+  const [[r]] = await pool.query(
+    `SELECT
+      (SELECT COUNT(*) FROM professores WHERE id = ? AND escola_id = ?) AS p,
+      (SELECT COUNT(*) FROM disciplinas WHERE id = ? AND escola_id = ?) AS d,
+      (SELECT COUNT(*) FROM turmas WHERE id = ? AND escola_id = ?) AS t`,
+    [professor_id, escolaId, disciplina_id, escolaId, turma_id, escolaId]
+  );
+  return r.p > 0 && r.d > 0 && r.t > 0;
+}
+
 function validarAula(body) {
   const { professor_id, disciplina_id, turma_id, dia_semana, hora_inicio, hora_fim } = body;
   if (!professor_id || !disciplina_id || !turma_id || !dia_semana || !hora_inicio || !hora_fim) {
@@ -69,7 +81,8 @@ router.get('/', async (req, res, next) => {
     const [turmas] = await pool.query(
       `SELECT t.id, t.nome, t.ano_letivo,
         (SELECT COUNT(*) FROM horarios h WHERE h.turma_id = t.id) AS total_aulas
-       FROM turmas t ORDER BY t.nome ASC`
+       FROM turmas t WHERE t.escola_id = ? ORDER BY t.nome ASC`,
+      [req.escolaId]
     );
 
     // Seletor em dois passos: Ano -> Turma (turmas com nome fora do formato ficam em "Outras")
@@ -113,11 +126,13 @@ router.get('/', async (req, res, next) => {
     const { grelha, blocosOcupados, totalBlocos } = montarGrelha(aulas);
 
     // Disciplinas e professores para o modal: quem dá cada disciplina, e quem está ligado à turma
-    const [disciplinas] = await pool.query('SELECT id, nome FROM disciplinas ORDER BY nome ASC');
-    const [professores] = await pool.query('SELECT id, nome FROM professores WHERE ativo = 1 ORDER BY nome ASC');
+    const [disciplinas] = await pool.query('SELECT id, nome FROM disciplinas WHERE escola_id = ? ORDER BY nome ASC', [req.escolaId]);
+    const [professores] = await pool.query('SELECT id, nome FROM professores WHERE escola_id = ? AND ativo = 1 ORDER BY nome ASC', [req.escolaId]);
     const [ligacoes] = await pool.query(
       `SELECT pd.disciplina_id, pd.professor_id
-       FROM professor_disciplinas pd JOIN professores p ON p.id = pd.professor_id AND p.ativo = 1`
+       FROM professor_disciplinas pd JOIN professores p ON p.id = pd.professor_id AND p.ativo = 1
+       WHERE p.escola_id = ?`,
+      [req.escolaId]
     );
     const idsTurma = professoresTurma.map((p) => p.id);
 
@@ -163,13 +178,18 @@ router.post('/', async (req, res, next) => {
     const invalido = validarAula(req.body);
     if (invalido) return redirectGrelha(req, res, turma_id, 'error', invalido);
 
-    const conflito = await verificarConflitos(req.body);
+
+    if (!(await daEscola(req.escolaId, req.body))) {
+      return redirectGrelha(req, res, turma_id, 'error', 'Professor, disciplina ou turma inválidos.');
+    }
+
+    const conflito = await verificarConflitos(req.escolaId, req.body);
     if (conflito) return redirectGrelha(req, res, turma_id, 'error', `Não foi possível guardar: ${conflito}`);
 
     await pool.query(
-      `INSERT INTO horarios (professor_id, disciplina_id, turma_id, dia_semana, hora_inicio, hora_fim, sala)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [professor_id, disciplina_id, turma_id, dia_semana, hora_inicio, hora_fim, sala ? sala.trim() : null]
+      `INSERT INTO horarios (escola_id, professor_id, disciplina_id, turma_id, dia_semana, hora_inicio, hora_fim, sala)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [req.escolaId, professor_id, disciplina_id, turma_id, dia_semana, hora_inicio, hora_fim, sala ? sala.trim() : null]
     );
 
     redirectGrelha(req, res, turma_id, 'success', `Aula adicionada: ${labelDia(dia_semana)}, ${hhmm(hora_inicio)}–${hhmm(hora_fim)}.`);
@@ -186,13 +206,18 @@ router.put('/:id', async (req, res, next) => {
     const invalido = validarAula(req.body);
     if (invalido) return redirectGrelha(req, res, turma_id, 'error', invalido);
 
-    const conflito = await verificarConflitos({ ...req.body, id: req.params.id });
+
+    if (!(await daEscola(req.escolaId, req.body))) {
+      return redirectGrelha(req, res, turma_id, 'error', 'Professor, disciplina ou turma inválidos.');
+    }
+
+    const conflito = await verificarConflitos(req.escolaId, { ...req.body, id: req.params.id });
     if (conflito) return redirectGrelha(req, res, turma_id, 'error', `Não foi possível guardar: ${conflito}`);
 
     await pool.query(
       `UPDATE horarios SET professor_id = ?, disciplina_id = ?, turma_id = ?, dia_semana = ?,
-        hora_inicio = ?, hora_fim = ?, sala = ? WHERE id = ?`,
-      [professor_id, disciplina_id, turma_id, dia_semana, hora_inicio, hora_fim, sala ? sala.trim() : null, req.params.id]
+        hora_inicio = ?, hora_fim = ?, sala = ? WHERE id = ? AND escola_id = ?`,
+      [professor_id, disciplina_id, turma_id, dia_semana, hora_inicio, hora_fim, sala ? sala.trim() : null, req.params.id, req.escolaId]
     );
 
     redirectGrelha(req, res, turma_id, 'success', 'Aula atualizada.');
@@ -204,8 +229,8 @@ router.put('/:id', async (req, res, next) => {
 // ELIMINAR AULA
 router.delete('/:id', async (req, res, next) => {
   try {
-    const [[aula]] = await pool.query('SELECT turma_id FROM horarios WHERE id = ?', [req.params.id]);
-    await pool.query('DELETE FROM horarios WHERE id = ?', [req.params.id]);
+    const [[aula]] = await pool.query('SELECT turma_id FROM horarios WHERE id = ? AND escola_id = ?', [req.params.id, req.escolaId]);
+    await pool.query('DELETE FROM horarios WHERE id = ? AND escola_id = ?', [req.params.id, req.escolaId]);
     redirectGrelha(req, res, aula && aula.turma_id, 'success', 'Aula eliminada.');
   } catch (err) {
     next(err);

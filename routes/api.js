@@ -6,8 +6,14 @@ const { DIAS_SEMANA, labelDia } = require('../config/horarioSlots');
 const { MOTIVOS_FALTA } = require('../config/ui');
 const { aulasAgora, calcularProgresso } = require('../config/aulas');
 const {
-  PERFIS, verificarPalavraPasse, criarTokenApi, idDoTokenApi, bloqueado, registarFalha, limparFalhas
+  PERFIS, SQL_UTILIZADOR_ATIVO, verificarPalavraPasse, criarTokenApi, idDoTokenApi, bloqueado, registarFalha, limparFalhas
 } = require('../config/auth');
+
+// Dados do utilizador devolvidos pela API (inclui a escola)
+const dadosUtilizador = (u) => ({
+  id: u.id, nome: u.nome, email: u.email, perfil: u.perfil, perfil_nome: PERFIS[u.perfil],
+  escola: { id: u.escola_id, nome: u.escola_nome, sigla: u.escola_sigla }
+});
 
 const DATA = /^\d{4}-\d{2}-\d{2}$/;
 const HORA = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
@@ -50,21 +56,20 @@ router.post('/login', async (req, res, next) => {
     const minutos = bloqueado(chave);
     if (minutos) return erro(res, 429, `Demasiadas tentativas falhadas. Tente novamente dentro de ${minutos} min.`);
 
-    const [[conta]] = await pool.query(
-      'SELECT id, nome, email, perfil, palavra_passe FROM utilizadores WHERE email = ? AND ativo = 1', [email]
+    const [[credenciais]] = await pool.query(
+      'SELECT id, palavra_passe FROM utilizadores WHERE email = ? AND ativo = 1', [email]
     );
-    if (!conta || !verificarPalavraPasse(palavraPasse, conta.palavra_passe)) {
+    if (!credenciais || !verificarPalavraPasse(palavraPasse, credenciais.palavra_passe)) {
       registarFalha(chave);
       return erro(res, 401, 'Email ou palavra-passe incorretos.');
     }
+    // A escola tem de estar ativa
+    const [[conta]] = await pool.query(SQL_UTILIZADOR_ATIVO, [credenciais.id]);
+    if (!conta) return erro(res, 403, 'O acesso da sua escola está suspenso. Contacte o administrador da plataforma.');
 
     limparFalhas(chave);
     const { token, expira } = criarTokenApi(conta.id);
-    res.json({
-      token,
-      expira_em: expira.toISOString(),
-      utilizador: { id: conta.id, nome: conta.nome, email: conta.email, perfil: conta.perfil, perfil_nome: PERFIS[conta.perfil] }
-    });
+    res.json({ token, expira_em: expira.toISOString(), utilizador: dadosUtilizador(conta) });
   } catch (err) {
     next(err);
   }
@@ -77,9 +82,10 @@ router.use(async (req, res, next) => {
     const id = tipo === 'Bearer' ? idDoTokenApi(token) : null;
     if (!id) return erro(res, 401, 'Token em falta, inválido ou expirado. Faça login em POST /api/login.');
 
-    const [[conta]] = await pool.query('SELECT id, nome, email, perfil FROM utilizadores WHERE id = ? AND ativo = 1', [id]);
-    if (!conta) return erro(res, 401, 'Conta desativada ou inexistente.');
+    const [[conta]] = await pool.query(SQL_UTILIZADOR_ATIVO, [id]);
+    if (!conta) return erro(res, 401, 'Conta desativada, inexistente ou escola suspensa.');
     req.utilizador = conta;
+    req.escolaId = conta.escola_id;
     next();
   } catch (err) {
     next(err);
@@ -87,10 +93,7 @@ router.use(async (req, res, next) => {
 });
 
 // GET /api/eu
-router.get('/eu', (req, res) => {
-  const u = req.utilizador;
-  res.json({ id: u.id, nome: u.nome, email: u.email, perfil: u.perfil, perfil_nome: PERFIS[u.perfil] });
-});
+router.get('/eu', (req, res) => res.json(dadosUtilizador(req.utilizador)));
 
 // ---------- Consulta ----------
 
@@ -98,7 +101,7 @@ router.get('/eu', (req, res) => {
 router.get('/aulas-agora', async (req, res, next) => {
   try {
     const agora = new Date();
-    const { aulas, proximaAula, diaKey, hoje, hora } = await aulasAgora(agora);
+    const { aulas, proximaAula, diaKey, hoje, hora } = await aulasAgora(req.escolaId, agora);
     calcularProgresso(aulas, agora);
     res.json({
       data: hoje,
@@ -134,7 +137,8 @@ router.get('/professores', async (req, res, next) => {
         (SELECT GROUP_CONCAT(d.nome ORDER BY d.nome SEPARATOR ', ')
            FROM professor_disciplinas pd JOIN disciplinas d ON d.id = pd.disciplina_id
            WHERE pd.professor_id = p.id) AS disciplinas
-       FROM professores p WHERE p.ativo = 1 ORDER BY p.nome ASC`
+       FROM professores p WHERE p.escola_id = ? AND p.ativo = 1 ORDER BY p.nome ASC`,
+      [req.escolaId]
     );
     res.json(professores.map((p) => ({ id: p.id, nome: p.nome, disciplinas: p.disciplinas ? p.disciplinas.split(', ') : [] })));
   } catch (err) {
@@ -158,8 +162,8 @@ router.get('/horarios', async (req, res, next) => {
       JOIN professores p ON p.id = h.professor_id
       JOIN disciplinas d ON d.id = h.disciplina_id
       JOIN turmas t ON t.id = h.turma_id
-      WHERE 1 = 1`;
-    const params = [];
+      WHERE h.escola_id = ?`;
+    const params = [req.escolaId];
     if (professor_id) { sql += ' AND h.professor_id = ?'; params.push(professor_id); }
     if (turma_id) { sql += ' AND h.turma_id = ?'; params.push(turma_id); }
     if (dia_semana) { sql += ' AND h.dia_semana = ?'; params.push(dia_semana); }
@@ -181,8 +185,9 @@ router.get('/faltas', async (req, res, next) => {
     const data = req.query.data || new Date().toLocaleDateString('sv-SE');
     if (!dataValida(data)) return erro(res, 400, 'data inválida. Use o formato AAAA-MM-DD.');
 
-    let sql = `SELECT f.*, p.nome AS professor_nome FROM faltas f JOIN professores p ON p.id = f.professor_id WHERE f.data_falta = ?`;
-    const params = [data];
+    let sql = `SELECT f.*, p.nome AS professor_nome FROM faltas f JOIN professores p ON p.id = f.professor_id
+               WHERE f.escola_id = ? AND f.data_falta = ?`;
+    const params = [req.escolaId, data];
     if (req.query.professor_id) { sql += ' AND f.professor_id = ?'; params.push(req.query.professor_id); }
     sql += ' ORDER BY p.nome, f.hora_inicio';
 
@@ -216,12 +221,16 @@ router.post('/faltas', async (req, res, next) => {
     if (body.motivo && String(body.motivo).length > 255) erros.push('motivo tem no máximo 255 caracteres.');
     if (erros.length) return erro(res, 400, 'Dados inválidos.', { detalhes: erros });
 
-    const [[professor]] = await pool.query('SELECT id, nome FROM professores WHERE id = ? AND ativo = 1', [professorId]);
+    const [[professor]] = await pool.query(
+      'SELECT id, nome FROM professores WHERE id = ? AND escola_id = ? AND ativo = 1', [professorId, req.escolaId]
+    );
     if (!professor) return erro(res, 404, 'Professor não encontrado ou inativo.');
 
     // Com horario_id, a falta fica ligada a essa aula e herda as horas
     if (horarioId) {
-      const [[aula]] = await pool.query('SELECT professor_id, dia_semana, hora_inicio, hora_fim FROM horarios WHERE id = ?', [horarioId]);
+      const [[aula]] = await pool.query(
+        'SELECT professor_id, dia_semana, hora_inicio, hora_fim FROM horarios WHERE id = ? AND escola_id = ?', [horarioId, req.escolaId]
+      );
       if (!aula) return erro(res, 404, 'Aula (horario_id) não encontrada.');
       if (aula.professor_id !== professorId) return erro(res, 400, 'Essa aula não pertence a este professor.');
       horaInicio = horaInicio || aula.hora_inicio;
@@ -241,10 +250,10 @@ router.post('/faltas', async (req, res, next) => {
     if (repetida) return erro(res, 409, 'Esta falta já está registada.', { falta_id: repetida.id });
 
     const [resultado] = await pool.query(
-      `INSERT INTO faltas (professor_id, horario_id, data_falta, hora_inicio, hora_fim, tipo, motivo, justificada, observacoes)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO faltas (escola_id, professor_id, horario_id, data_falta, hora_inicio, hora_fim, tipo, motivo, justificada, observacoes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        professorId, horarioId, data, horaInicio, horaFim, tipo,
+        req.escolaId, professorId, horarioId, data, horaInicio, horaFim, tipo,
         body.motivo ? String(body.motivo).trim() : null,
         body.justificada ? 1 : 0,
         body.observacoes ? String(body.observacoes).slice(0, 2000) : null

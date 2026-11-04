@@ -15,9 +15,9 @@ router.get('/', async (req, res, next) => {
       SELECT f.*, p.nome AS professor_nome, ${DISCIPLINAS_SUBQ}
       FROM faltas f
       JOIN professores p ON p.id = f.professor_id
-      WHERE 1 = 1
+      WHERE f.escola_id = ?
     `;
-    const params = [];
+    const params = [req.escolaId];
 
     if (professor_id) {
       sql += ' AND f.professor_id = ? ';
@@ -44,7 +44,7 @@ router.get('/', async (req, res, next) => {
     sql += ' ORDER BY f.data_falta DESC, f.id DESC';
 
     const [faltas] = await pool.query(sql, params);
-    const [professores] = await pool.query('SELECT id, nome FROM professores ORDER BY nome ASC');
+    const [professores] = await pool.query('SELECT id, nome FROM professores WHERE escola_id = ? ORDER BY nome ASC', [req.escolaId]);
 
     res.render('faltas/list', {
       pageTitle: 'Registos de Faltas',
@@ -63,12 +63,13 @@ router.get('/', async (req, res, next) => {
 // FORMULÁRIO EDITAR
 router.get('/:id/editar', async (req, res, next) => {
   try {
-    const [[falta]] = await pool.query('SELECT * FROM faltas WHERE id = ?', [req.params.id]);
+    const [[falta]] = await pool.query('SELECT * FROM faltas WHERE id = ? AND escola_id = ?', [req.params.id, req.escolaId]);
     if (!falta) {
       return res.status(404).render('404', { pageTitle: 'Não encontrado', activePage: '' });
     }
     const [professores] = await pool.query(
-      `SELECT p.id, p.nome, ${DISCIPLINAS_SUBQ} FROM professores p ORDER BY p.nome ASC`
+      `SELECT p.id, p.nome, ${DISCIPLINAS_SUBQ} FROM professores p WHERE p.escola_id = ? ORDER BY p.nome ASC`,
+      [req.escolaId]
     );
 
     res.render('faltas/form', {
@@ -91,9 +92,15 @@ router.put('/:id', async (req, res, next) => {
       tipo, motivo, justificada, substituto, observacoes
     } = req.body;
 
-    if (!professor_id || !data_falta) {
+    // O professor tem de ser da mesma escola
+    const [[professorValido]] = professor_id
+      ? await pool.query('SELECT id FROM professores WHERE id = ? AND escola_id = ?', [professor_id, req.escolaId])
+      : [[null]];
+
+    if (!professorValido || !data_falta) {
       const [professores] = await pool.query(
-        `SELECT p.id, p.nome, ${DISCIPLINAS_SUBQ} FROM professores p ORDER BY p.nome ASC`
+        `SELECT p.id, p.nome, ${DISCIPLINAS_SUBQ} FROM professores p WHERE p.escola_id = ? ORDER BY p.nome ASC`,
+        [req.escolaId]
       );
       return res.render('faltas/form', {
         pageTitle: 'Editar Falta',
@@ -107,11 +114,11 @@ router.put('/:id', async (req, res, next) => {
     await pool.query(
       `UPDATE faltas SET professor_id = ?, data_falta = ?, hora_inicio = ?, hora_fim = ?,
         tipo = ?, motivo = ?, justificada = ?, substituto = ?, observacoes = ?
-       WHERE id = ?`,
+       WHERE id = ? AND escola_id = ?`,
       [
         professor_id, data_falta, hora_inicio || null, hora_fim || null,
         tipo || 'falta', motivo || null, justificada ? 1 : 0,
-        substituto || null, observacoes || null, req.params.id
+        substituto || null, observacoes || null, req.params.id, req.escolaId
       ]
     );
 
@@ -125,8 +132,8 @@ router.put('/:id', async (req, res, next) => {
 router.post('/:id/justificar', async (req, res, next) => {
   try {
     await pool.query(
-      'UPDATE faltas SET justificada = NOT justificada WHERE id = ?',
-      [req.params.id]
+      'UPDATE faltas SET justificada = NOT justificada WHERE id = ? AND escola_id = ?',
+      [req.params.id, req.escolaId]
     );
     res.redirect(req.get('Referrer') || '/faltas');
   } catch (err) {
@@ -137,7 +144,7 @@ router.post('/:id/justificar', async (req, res, next) => {
 // ELIMINAR
 router.delete('/:id', async (req, res, next) => {
   try {
-    await pool.query('DELETE FROM faltas WHERE id = ?', [req.params.id]);
+    await pool.query('DELETE FROM faltas WHERE id = ? AND escola_id = ?', [req.params.id, req.escolaId]);
     res.redirect('/faltas?success=Falta eliminada.');
   } catch (err) {
     next(err);

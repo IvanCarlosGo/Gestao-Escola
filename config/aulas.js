@@ -7,7 +7,7 @@ const minutosDoDia = (hora) => {
   return h * 60 + m;
 };
 
-async function aulasAgora(agora = new Date()) {
+async function aulasAgora(escolaId, agora = new Date()) {
   const hoje = agora.toLocaleDateString('sv-SE');
   const diaKey = DIA_SEMANA_JS[agora.getDay()] || null;
   const hora = agora.toTimeString().slice(0, 8);
@@ -26,17 +26,17 @@ async function aulasAgora(agora = new Date()) {
        JOIN professores p ON p.id = h.professor_id AND p.ativo = 1
        JOIN disciplinas d ON d.id = h.disciplina_id
        JOIN turmas t ON t.id = h.turma_id
-       WHERE h.dia_semana = ? AND h.hora_inicio <= ? AND h.hora_fim > ?
+       WHERE h.escola_id = ? AND h.dia_semana = ? AND h.hora_inicio <= ? AND h.hora_fim > ?
        ORDER BY p.nome ASC`,
-      [hoje, diaKey, hora, hora]
+      [hoje, escolaId, diaKey, hora, hora]
     );
 
     if (aulas.length === 0) {
       const [[proxima]] = await pool.query(
         `SELECT MIN(h.hora_inicio) AS hora_inicio
          FROM horarios h JOIN professores p ON p.id = h.professor_id AND p.ativo = 1
-         WHERE h.dia_semana = ? AND h.hora_inicio > ?`,
-        [diaKey, hora]
+         WHERE h.escola_id = ? AND h.dia_semana = ? AND h.hora_inicio > ?`,
+        [escolaId, diaKey, hora]
       );
       proximaAula = proxima && proxima.hora_inicio ? proxima : null;
     }

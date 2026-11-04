@@ -4,30 +4,59 @@ const { pool } = require('../config/db');
 const { DIAS_SEMANA, SLOTS, montarGrelha } = require('../config/horarioSlots');
 const { diasUteisMes } = require('../config/ui');
 
+// Todas as consultas são da escola de quem tem sessão iniciada (req.escolaId)
+
 function toArray(value) {
   if (!value) return [];
   return Array.isArray(value) ? value : [value];
 }
 
-async function getCatalogo() {
-  const [disciplinas] = await pool.query('SELECT id, nome FROM disciplinas ORDER BY nome ASC');
-  const [turmas] = await pool.query('SELECT id, nome FROM turmas ORDER BY nome ASC');
+async function getCatalogo(escolaId) {
+  const [disciplinas] = await pool.query('SELECT id, nome FROM disciplinas WHERE escola_id = ? ORDER BY nome ASC', [escolaId]);
+  const [turmas] = await pool.query('SELECT id, nome FROM turmas WHERE escola_id = ? ORDER BY nome ASC', [escolaId]);
   return { disciplinas, turmas };
 }
 
-async function syncRelacoes(professorId, disciplinaIds, turmaIds) {
+async function professorDaEscola(id, escolaId) {
+  const [[professor]] = await pool.query('SELECT * FROM professores WHERE id = ? AND escola_id = ?', [id, escolaId]);
+  return professor || null;
+}
+
+// Mantém só os ids que pertencem à escola (evita ligar disciplinas/turmas de outra escola)
+async function idsDaEscola(tabela, ids, escolaId) {
+  if (!ids.length) return [];
+  const [linhas] = await pool.query(`SELECT id FROM ${tabela} WHERE escola_id = ? AND id IN (?)`, [escolaId, ids]);
+  return linhas.map((l) => l.id);
+}
+
+async function syncRelacoes(escolaId, professorId, disciplinaIds, turmaIds) {
+  const disciplinas = await idsDaEscola('disciplinas', disciplinaIds, escolaId);
+  const turmas = await idsDaEscola('turmas', turmaIds, escolaId);
+
   await pool.query('DELETE FROM professor_disciplinas WHERE professor_id = ?', [professorId]);
   await pool.query('DELETE FROM professor_turmas WHERE professor_id = ?', [professorId]);
 
-  if (disciplinaIds.length) {
-    const values = disciplinaIds.map((id) => [professorId, id]);
-    await pool.query('INSERT INTO professor_disciplinas (professor_id, disciplina_id) VALUES ?', [values]);
+  if (disciplinas.length) {
+    await pool.query('INSERT INTO professor_disciplinas (professor_id, disciplina_id) VALUES ?', [disciplinas.map((id) => [professorId, id])]);
   }
-  if (turmaIds.length) {
-    const values = turmaIds.map((id) => [professorId, id]);
-    await pool.query('INSERT INTO professor_turmas (professor_id, turma_id) VALUES ?', [values]);
+  if (turmas.length) {
+    await pool.query('INSERT INTO professor_turmas (professor_id, turma_id) VALUES ?', [turmas.map((id) => [professorId, id])]);
   }
 }
+
+async function renderForm(req, res, professor, selecionadas, error) {
+  const catalogo = await getCatalogo(req.escolaId);
+  res.render('professores/form', {
+    pageTitle: professor.id ? 'Editar Professor' : 'Novo Professor',
+    activePage: 'professores',
+    professor,
+    selecionadas,
+    ...catalogo,
+    error
+  });
+}
+
+const naoEncontrado = (res) => res.status(404).render('404', { pageTitle: 'Não encontrado', activePage: '' });
 
 // LISTAR + PESQUISAR
 router.get('/', async (req, res, next) => {
@@ -46,13 +75,14 @@ router.get('/', async (req, res, next) => {
            FROM professor_turmas pt JOIN turmas t ON t.id = pt.turma_id
            WHERE pt.professor_id = p.id) AS turmas
       FROM professores p
+      WHERE p.escola_id = ?
     `;
-    const params = [];
+    const params = [req.escolaId];
 
     if (termo) {
-      sql += ` WHERE p.nome LIKE ? OR p.email LIKE ?
+      sql += ` AND (p.nome LIKE ? OR p.email LIKE ?
                 OR EXISTS (SELECT 1 FROM professor_disciplinas pd JOIN disciplinas d ON d.id = pd.disciplina_id
-                           WHERE pd.professor_id = p.id AND d.nome LIKE ?) `;
+                           WHERE pd.professor_id = p.id AND d.nome LIKE ?)) `;
       params.push(`%${termo}%`, `%${termo}%`, `%${termo}%`);
     }
 
@@ -95,15 +125,7 @@ router.get('/', async (req, res, next) => {
 // FORMULÁRIO NOVO
 router.get('/novo', async (req, res, next) => {
   try {
-    const catalogo = await getCatalogo();
-    res.render('professores/form', {
-      pageTitle: 'Novo Professor',
-      activePage: 'professores',
-      professor: {},
-      selecionadas: { disciplinas: [], turmas: [] },
-      ...catalogo,
-      error: null
-    });
+    await renderForm(req, res, {}, { disciplinas: [], turmas: [] }, null);
   } catch (err) {
     next(err);
   }
@@ -111,45 +133,27 @@ router.get('/novo', async (req, res, next) => {
 
 // CRIAR
 router.post('/', async (req, res, next) => {
+  const { nome, email, telefone, data_admissao, ativo } = req.body;
+  const disciplinaIds = toArray(req.body.disciplinas).map(Number);
+  const turmaIds = toArray(req.body.turmas).map(Number);
+  const selecionadas = { disciplinas: disciplinaIds, turmas: turmaIds };
   try {
-    const { nome, email, telefone, data_admissao, ativo } = req.body;
-    const disciplinaIds = toArray(req.body.disciplinas).map(Number);
-    const turmaIds = toArray(req.body.turmas).map(Number);
-
     if (!nome || disciplinaIds.length === 0) {
-      const catalogo = await getCatalogo();
-      return res.render('professores/form', {
-        pageTitle: 'Novo Professor',
-        activePage: 'professores',
-        professor: req.body,
-        selecionadas: { disciplinas: disciplinaIds, turmas: turmaIds },
-        ...catalogo,
-        error: 'Nome e pelo menos uma disciplina são obrigatórios.'
-      });
+      return renderForm(req, res, req.body, selecionadas, 'Nome e pelo menos uma disciplina são obrigatórios.');
     }
 
     const [result] = await pool.query(
-      `INSERT INTO professores (nome, email, telefone, data_admissao, ativo)
-       VALUES (?, ?, ?, ?, ?)`,
-      [nome, email || null, telefone || null, data_admissao || null, ativo ? 1 : 0]
+      `INSERT INTO professores (escola_id, nome, email, telefone, data_admissao, ativo)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [req.escolaId, nome, email || null, telefone || null, data_admissao || null, ativo ? 1 : 0]
     );
 
-    await syncRelacoes(result.insertId, disciplinaIds, turmaIds);
+    await syncRelacoes(req.escolaId, result.insertId, disciplinaIds, turmaIds);
 
     // Segue logo para a grelha do horário do novo professor
     res.redirect(`/professores/${result.insertId}?tab=horario&success=${encodeURIComponent('Professor criado. Clique nos blocos da grelha para atribuir o horário.')}`);
   } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') {
-      const catalogo = await getCatalogo();
-      return res.render('professores/form', {
-        pageTitle: 'Novo Professor',
-        activePage: 'professores',
-        professor: req.body,
-        selecionadas: { disciplinas: toArray(req.body.disciplinas).map(Number), turmas: toArray(req.body.turmas).map(Number) },
-        ...catalogo,
-        error: 'Já existe um professor com esse email.'
-      });
-    }
+    if (err.code === 'ER_DUP_ENTRY') return renderForm(req, res, req.body, selecionadas, 'Já existe um professor com esse email.');
     next(err);
   }
 });
@@ -157,24 +161,24 @@ router.post('/', async (req, res, next) => {
 // PERFIL DO PROFESSOR (com separadores)
 router.get('/:id', async (req, res, next) => {
   try {
-    const [[professor]] = await pool.query('SELECT * FROM professores WHERE id = ?', [req.params.id]);
-    if (!professor) return res.status(404).render('404', { pageTitle: 'Não encontrado', activePage: '' });
+    const professor = await professorDaEscola(req.params.id, req.escolaId);
+    if (!professor) return naoEncontrado(res);
 
     const [disciplinas] = await pool.query(
       `SELECT d.* FROM disciplinas d
        JOIN professor_disciplinas pd ON pd.disciplina_id = d.id
        WHERE pd.professor_id = ? ORDER BY d.nome`,
-      [req.params.id]
+      [professor.id]
     );
     const [turmas] = await pool.query(
       `SELECT t.* FROM turmas t
        JOIN professor_turmas pt ON pt.turma_id = t.id
        WHERE pt.professor_id = ? ORDER BY t.nome`,
-      [req.params.id]
+      [professor.id]
     );
     const [faltas] = await pool.query(
       'SELECT * FROM faltas WHERE professor_id = ? ORDER BY data_falta DESC, id DESC',
-      [req.params.id]
+      [professor.id]
     );
     const [horarios] = await pool.query(
       `SELECT h.*, d.nome AS disciplina_nome, t.nome AS turma_nome
@@ -182,20 +186,16 @@ router.get('/:id', async (req, res, next) => {
        JOIN disciplinas d ON d.id = h.disciplina_id
        JOIN turmas t ON t.id = h.turma_id
        WHERE h.professor_id = ?`,
-      [req.params.id]
+      [professor.id]
     );
 
-    const [[{ totalFaltas }]] = await pool.query(
-      'SELECT COUNT(*) AS totalFaltas FROM faltas WHERE professor_id = ?', [req.params.id]
-    );
-    const [[{ totalJustificadas }]] = await pool.query(
-      'SELECT COUNT(*) AS totalJustificadas FROM faltas WHERE professor_id = ? AND justificada = 1', [req.params.id]
-    );
+    const totalFaltas = faltas.length;
+    const totalJustificadas = faltas.filter((f) => f.justificada).length;
 
     const { grelha, blocosOcupados, totalBlocos } = montarGrelha(horarios);
 
     // Opções do modal da grelha: as turmas e disciplinas do professor aparecem primeiro
-    const catalogo = await getCatalogo();
+    const catalogo = await getCatalogo(req.escolaId);
     const idsTurmas = turmas.map((t) => t.id);
     const idsDisciplinas = disciplinas.map((d) => d.id);
     const opcoesHorario = {
@@ -233,24 +233,16 @@ router.get('/:id', async (req, res, next) => {
 // FORMULÁRIO EDITAR
 router.get('/:id/editar', async (req, res, next) => {
   try {
-    const [[professor]] = await pool.query('SELECT * FROM professores WHERE id = ?', [req.params.id]);
-    if (!professor) return res.status(404).render('404', { pageTitle: 'Não encontrado', activePage: '' });
+    const professor = await professorDaEscola(req.params.id, req.escolaId);
+    if (!professor) return naoEncontrado(res);
 
-    const [disciplinasSel] = await pool.query('SELECT disciplina_id FROM professor_disciplinas WHERE professor_id = ?', [req.params.id]);
-    const [turmasSel] = await pool.query('SELECT turma_id FROM professor_turmas WHERE professor_id = ?', [req.params.id]);
-    const catalogo = await getCatalogo();
+    const [disciplinasSel] = await pool.query('SELECT disciplina_id FROM professor_disciplinas WHERE professor_id = ?', [professor.id]);
+    const [turmasSel] = await pool.query('SELECT turma_id FROM professor_turmas WHERE professor_id = ?', [professor.id]);
 
-    res.render('professores/form', {
-      pageTitle: 'Editar Professor',
-      activePage: 'professores',
-      professor,
-      selecionadas: {
-        disciplinas: disciplinasSel.map((r) => r.disciplina_id),
-        turmas: turmasSel.map((r) => r.turma_id)
-      },
-      ...catalogo,
-      error: null
-    });
+    await renderForm(req, res, professor, {
+      disciplinas: disciplinasSel.map((r) => r.disciplina_id),
+      turmas: turmasSel.map((r) => r.turma_id)
+    }, null);
   } catch (err) {
     next(err);
   }
@@ -258,33 +250,30 @@ router.get('/:id/editar', async (req, res, next) => {
 
 // ATUALIZAR
 router.put('/:id', async (req, res, next) => {
+  const { nome, email, telefone, data_admissao, ativo } = req.body;
+  const disciplinaIds = toArray(req.body.disciplinas).map(Number);
+  const turmaIds = toArray(req.body.turmas).map(Number);
+  const selecionadas = { disciplinas: disciplinaIds, turmas: turmaIds };
+  const professorForm = { ...req.body, id: req.params.id };
   try {
-    const { nome, email, telefone, data_admissao, ativo } = req.body;
-    const disciplinaIds = toArray(req.body.disciplinas).map(Number);
-    const turmaIds = toArray(req.body.turmas).map(Number);
+    const professor = await professorDaEscola(req.params.id, req.escolaId);
+    if (!professor) return naoEncontrado(res);
 
     if (!nome || disciplinaIds.length === 0) {
-      const catalogo = await getCatalogo();
-      return res.render('professores/form', {
-        pageTitle: 'Editar Professor',
-        activePage: 'professores',
-        professor: { ...req.body, id: req.params.id },
-        selecionadas: { disciplinas: disciplinaIds, turmas: turmaIds },
-        ...catalogo,
-        error: 'Nome e pelo menos uma disciplina são obrigatórios.'
-      });
+      return renderForm(req, res, professorForm, selecionadas, 'Nome e pelo menos uma disciplina são obrigatórios.');
     }
 
     await pool.query(
       `UPDATE professores SET nome = ?, email = ?, telefone = ?, data_admissao = ?, ativo = ?
-       WHERE id = ?`,
-      [nome, email || null, telefone || null, data_admissao || null, ativo ? 1 : 0, req.params.id]
+       WHERE id = ? AND escola_id = ?`,
+      [nome, email || null, telefone || null, data_admissao || null, ativo ? 1 : 0, professor.id, req.escolaId]
     );
 
-    await syncRelacoes(req.params.id, disciplinaIds, turmaIds);
+    await syncRelacoes(req.escolaId, professor.id, disciplinaIds, turmaIds);
 
-    res.redirect(`/professores/${req.params.id}?success=Dados atualizados com sucesso.`);
+    res.redirect(`/professores/${professor.id}?success=Dados atualizados com sucesso.`);
   } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') return renderForm(req, res, professorForm, selecionadas, 'Já existe um professor com esse email.');
     next(err);
   }
 });
@@ -292,7 +281,7 @@ router.put('/:id', async (req, res, next) => {
 // ELIMINAR
 router.delete('/:id', async (req, res, next) => {
   try {
-    await pool.query('DELETE FROM professores WHERE id = ?', [req.params.id]);
+    await pool.query('DELETE FROM professores WHERE id = ? AND escola_id = ?', [req.params.id, req.escolaId]);
     res.redirect('/professores?success=Professor eliminado.');
   } catch (err) {
     next(err);

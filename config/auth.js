@@ -4,7 +4,16 @@ const { pool } = require('./db');
 
 const COOKIE = 'sessao';
 const DURACAO_SESSAO_MS = 8 * 60 * 60 * 1000; // 8 horas
-const PERFIS = { admin: 'Administrador', secretaria: 'Secretaria' };
+const PERFIS = { admin: 'Administrador', secretaria: 'Secretaria', continuo: 'Contínuo' };
+// Perfis que entram no site de gestão (o Contínuo usa só a aplicação móvel)
+const PERFIS_WEB = ['admin', 'secretaria'];
+
+// Utilizador ativo de uma escola ativa (usado pelo site e pela API)
+const SQL_UTILIZADOR_ATIVO = `
+  SELECT u.id, u.nome, u.email, u.perfil, u.escola_id,
+    e.nome AS escola_nome, e.sigla AS escola_sigla, e.logo AS escola_logo
+  FROM utilizadores u JOIN escolas e ON e.id = u.escola_id AND e.ativo = 1
+  WHERE u.id = ? AND u.ativo = 1`;
 
 let SEGREDO = process.env.SESSION_SECRET;
 if (!SEGREDO || SEGREDO.length < 32) {
@@ -39,15 +48,31 @@ function assinatura(valor) {
   return crypto.createHmac('sha256', SEGREDO).update(valor).digest('base64url');
 }
 
-function criarSessao(res, utilizadorId) {
-  const valor = `${utilizadorId}.${Date.now() + DURACAO_SESSAO_MS}`;
-  res.cookie(COOKIE, `${valor}.${assinatura(valor)}`, {
+function definirCookieAssinado(res, nome, id, prefixo) {
+  const valor = `${id}.${Date.now() + DURACAO_SESSAO_MS}`;
+  res.cookie(nome, `${valor}.${assinatura(prefixo + valor)}`, {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.COOKIE_SECURE === '1',
     maxAge: DURACAO_SESSAO_MS,
     path: '/'
   });
+}
+
+function lerCookieAssinado(req, nome, prefixo) {
+  const bruto = lerCookies(req.headers.cookie)[nome];
+  if (!bruto) return null;
+  const [id, expira, sig] = bruto.split('.');
+  if (!id || !expira || !sig) return null;
+  const esperado = Buffer.from(assinatura(`${prefixo}${id}.${expira}`));
+  const recebido = Buffer.from(sig);
+  if (esperado.length !== recebido.length || !crypto.timingSafeEqual(esperado, recebido)) return null;
+  if (Number(expira) < Date.now()) return null;
+  return Number(id);
+}
+
+function criarSessao(res, utilizadorId) {
+  definirCookieAssinado(res, COOKIE, utilizadorId, '');
 }
 
 function terminarSessao(res) {
@@ -64,15 +89,7 @@ function lerCookies(cabecalho) {
 }
 
 function idDaSessao(req) {
-  const bruto = lerCookies(req.headers.cookie)[COOKIE];
-  if (!bruto) return null;
-  const [id, expira, sig] = bruto.split('.');
-  if (!id || !expira || !sig) return null;
-  const esperado = Buffer.from(assinatura(`${id}.${expira}`));
-  const recebido = Buffer.from(sig);
-  if (esperado.length !== recebido.length || !crypto.timingSafeEqual(esperado, recebido)) return null;
-  if (Number(expira) < Date.now()) return null;
-  return Number(id);
+  return lerCookieAssinado(req, COOKIE, '');
 }
 
 // Carrega o utilizador da sessão em cada pedido (assim, desativar alguém tem efeito imediato)
@@ -80,11 +97,16 @@ async function carregarUtilizador(req, res, next) {
   try {
     const id = idDaSessao(req);
     if (id) {
-      const [[utilizador]] = await pool.query(
-        'SELECT id, nome, email, perfil FROM utilizadores WHERE id = ? AND ativo = 1', [id]
-      );
-      if (utilizador) {
+      const [[utilizador]] = await pool.query(SQL_UTILIZADOR_ATIVO, [id]);
+      if (utilizador && PERFIS_WEB.includes(utilizador.perfil)) {
         req.utilizador = utilizador;
+        req.escolaId = utilizador.escola_id;
+        res.locals.escola = {
+          id: utilizador.escola_id,
+          nome: utilizador.escola_nome,
+          sigla: utilizador.escola_sigla,
+          logo: utilizador.escola_logo
+        };
         res.locals.utilizador = utilizador;
         res.locals.ehAdmin = utilizador.perfil === 'admin';
         res.locals.nomePerfil = PERFIS[utilizador.perfil] || utilizador.perfil;
@@ -174,18 +196,7 @@ function limparFalhas(chave) {
 // ---------- Tabela e administrador inicial ----------
 
 async function prepararUtilizadores() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS utilizadores (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      nome VARCHAR(100) NOT NULL,
-      email VARCHAR(150) NOT NULL UNIQUE,
-      palavra_passe VARCHAR(255) NOT NULL,
-      perfil ENUM('admin','secretaria') NOT NULL DEFAULT 'secretaria',
-      ativo TINYINT(1) NOT NULL DEFAULT 1,
-      criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  `);
-
+  // A tabela é criada em config/migracoes.js
   const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM utilizadores');
   if (total > 0) return;
 
@@ -196,7 +207,7 @@ async function prepararUtilizadores() {
   const palavraPasse = process.env.ADMIN_PASSWORD || crypto.randomBytes(9).toString('base64url');
 
   await pool.query(
-    "INSERT INTO utilizadores (nome, email, palavra_passe, perfil) VALUES (?, ?, ?, 'admin')",
+    "INSERT INTO utilizadores (escola_id, nome, email, palavra_passe, perfil) VALUES ((SELECT MIN(id) FROM escolas), ?, ?, ?, 'admin')",
     [nome, email, hashPalavraPasse(palavraPasse)]
   );
 
@@ -210,6 +221,10 @@ async function prepararUtilizadores() {
 
 module.exports = {
   PERFIS,
+  PERFIS_WEB,
+  SQL_UTILIZADOR_ATIVO,
+  definirCookieAssinado,
+  lerCookieAssinado,
   hashPalavraPasse,
   verificarPalavraPasse,
   validarNovaPalavraPasse,

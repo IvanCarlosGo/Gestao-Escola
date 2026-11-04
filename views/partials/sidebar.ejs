@@ -1,9 +1,16 @@
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-brand">
-    <div class="brand-icon"><img src="/img/logo.jpg" alt="Logótipo E.S.P.C.R"></div>
+    <% const escolaAtual = typeof escola !== 'undefined' && escola ? escola : null; %>
+    <div class="brand-icon">
+      <% if (escolaAtual && escolaAtual.logo) { %>
+        <img src="<%= escolaAtual.logo %>" alt="Logótipo <%= escolaAtual.sigla || escolaAtual.nome %>">
+      <% } else { %>
+        <i class="fa-solid fa-graduation-cap brand-fallback"></i>
+      <% } %>
+    </div>
     <div class="brand-text">
       <strong>Gestão Escolar</strong>
-      <span>Faltas dos Professores</span>
+      <span title="<%= escolaAtual ? escolaAtual.nome : '' %>"><%= escolaAtual ? (escolaAtual.sigla || escolaAtual.nome) : 'Faltas dos Professores' %></span>
     </div>
   </div>
 

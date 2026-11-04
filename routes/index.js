@@ -9,14 +9,15 @@ const MESES_CURTOS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'S
 
 // Dados fictícios para pré-visualizar a lista "Professores com aula agora" fora do horário letivo.
 // Usa os professores ativos reais (com a sua disciplina e turma) e inventa aulas a decorrer agora.
-async function aulasDemo(agora) {
+async function aulasDemo(escolaId, agora) {
   const [profs] = await pool.query(
     `SELECT p.id AS professor_id, p.nome AS professor_nome,
       (SELECT d.nome FROM professor_disciplinas pd JOIN disciplinas d ON d.id = pd.disciplina_id
          WHERE pd.professor_id = p.id ORDER BY d.nome LIMIT 1) AS disciplina_nome,
       (SELECT t.nome FROM professor_turmas pt JOIN turmas t ON t.id = pt.turma_id
          WHERE pt.professor_id = p.id ORDER BY t.nome LIMIT 1) AS turma_nome
-     FROM professores p WHERE p.ativo = 1 ORDER BY p.nome LIMIT 8`
+     FROM professores p WHERE p.escola_id = ? AND p.ativo = 1 ORDER BY p.nome LIMIT 8`,
+    [escolaId]
   );
 
   const hhmm = (min) => `${String(Math.floor(min / 60) % 24).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
@@ -40,28 +41,33 @@ async function aulasDemo(agora) {
 
 router.get('/', async (req, res, next) => {
   try {
+    const escolaId = req.escolaId;
     const [[{ totalProfessores }]] = await pool.query(
-      'SELECT COUNT(*) AS totalProfessores FROM professores WHERE ativo = 1'
+      'SELECT COUNT(*) AS totalProfessores FROM professores WHERE escola_id = ? AND ativo = 1', [escolaId]
     );
 
     const [[{ totalFaltasMes }]] = await pool.query(
       `SELECT COUNT(*) AS totalFaltasMes FROM faltas
-       WHERE MONTH(data_falta) = MONTH(CURDATE()) AND YEAR(data_falta) = YEAR(CURDATE())`
+       WHERE escola_id = ? AND MONTH(data_falta) = MONTH(CURDATE()) AND YEAR(data_falta) = YEAR(CURDATE())`,
+      [escolaId]
     );
 
     const [faltasRecentes] = await pool.query(
       `SELECT f.id, f.data_falta, f.motivo, f.tipo, f.justificada, p.id AS professor_id, p.nome AS professor_nome
        FROM faltas f
        JOIN professores p ON p.id = f.professor_id
+       WHERE f.escola_id = ?
        ORDER BY f.data_falta DESC, f.id DESC
-       LIMIT 5`
+       LIMIT 5`,
+      [escolaId]
     );
 
     const [porMes] = await pool.query(
       `SELECT MONTH(data_falta) AS mes, COUNT(*) AS total
        FROM faltas
-       WHERE YEAR(data_falta) = YEAR(CURDATE())
-       GROUP BY mes`
+       WHERE escola_id = ? AND YEAR(data_falta) = YEAR(CURDATE())
+       GROUP BY mes`,
+      [escolaId]
     );
 
     // Janeiro até ao mês atual, com zeros nos meses sem faltas
@@ -79,7 +85,7 @@ router.get('/', async (req, res, next) => {
 
     // Professores com aula a decorrer neste momento, segundo o horário
     const agora = new Date();
-    const atual = await aulasAgora(agora);
+    const atual = await aulasAgora(escolaId, agora);
     const diaAtualKey = atual.diaKey;
     const horaAtual = atual.hora;
     let { aulas, proximaAula } = atual;
@@ -87,7 +93,7 @@ router.get('/', async (req, res, next) => {
     // Pré-visualização com dados fictícios (/?demo=1): nada é gravado na base de dados
     const demo = req.query.demo === '1';
     if (demo) {
-      aulas = await aulasDemo(agora);
+      aulas = await aulasDemo(escolaId, agora);
       proximaAula = null;
     }
 

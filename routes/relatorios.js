@@ -4,16 +4,21 @@ const PDFDocument = require('pdfkit');
 const router = express.Router();
 const { pool } = require('../config/db');
 
-const NOME_ESCOLA = 'Escola Secundária Polivalente Cesaltina Ramos';
-const LOGO = path.join(__dirname, '..', 'public', 'img', 'logo.jpg');
+const PASTA_PUBLICA = path.join(__dirname, '..', 'public');
+
+// Logótipo da escola (caminho em /img/...) convertido para ficheiro local; null se não houver ou for inválido
+function ficheiroLogo(logo) {
+  if (!logo || !/^\/img\/[\w./-]+$/.test(logo) || logo.includes('..')) return null;
+  return path.join(PASTA_PUBLICA, logo);
+}
 
 const dataPt = (iso) => (iso ? String(iso).slice(0, 10).split('-').reverse().join('/') : '');
 
 // Filtros partilhados pelo PDF e pelo CSV (período, professor, estado)
-async function obterFaltasFiltradas(query) {
+async function obterFaltasFiltradas(escolaId, query) {
   const { data_inicio, data_fim, professor_id, estado } = query;
-  let where = ' WHERE 1 = 1 ';
-  const params = [];
+  let where = ' WHERE f.escola_id = ? ';
+  const params = [escolaId];
   const descricao = [];
 
   if (data_inicio) { where += ' AND f.data_falta >= ? '; params.push(data_inicio); }
@@ -27,7 +32,7 @@ async function obterFaltasFiltradas(query) {
   if (professor_id) {
     where += ' AND f.professor_id = ? ';
     params.push(professor_id);
-    const [[prof]] = await pool.query('SELECT nome FROM professores WHERE id = ?', [professor_id]);
+    const [[prof]] = await pool.query('SELECT nome FROM professores WHERE id = ? AND escola_id = ?', [professor_id, escolaId]);
     if (prof) descricao.push(`Professor: ${prof.nome}`);
   }
 
@@ -53,27 +58,29 @@ function sufixoFicheiro(query) {
 
 router.get('/', async (req, res, next) => {
   try {
+    const e = req.escolaId;
     const [[resumo]] = await pool.query(`
       SELECT
-        (SELECT COUNT(*) FROM professores WHERE ativo = 1) AS totalProfessores,
-        (SELECT COUNT(*) FROM turmas) AS totalTurmas,
-        (SELECT COUNT(*) FROM disciplinas) AS totalDisciplinas,
-        (SELECT COUNT(*) FROM faltas) AS totalFaltas,
-        (SELECT COUNT(*) FROM faltas WHERE justificada = 1) AS totalJustificadas,
-        (SELECT COUNT(*) FROM faltas WHERE YEAR(data_falta) = YEAR(CURDATE())) AS totalFaltasAno
-    `);
+        (SELECT COUNT(*) FROM professores WHERE escola_id = ? AND ativo = 1) AS totalProfessores,
+        (SELECT COUNT(*) FROM turmas WHERE escola_id = ?) AS totalTurmas,
+        (SELECT COUNT(*) FROM disciplinas WHERE escola_id = ?) AS totalDisciplinas,
+        (SELECT COUNT(*) FROM faltas WHERE escola_id = ?) AS totalFaltas,
+        (SELECT COUNT(*) FROM faltas WHERE escola_id = ? AND justificada = 1) AS totalJustificadas,
+        (SELECT COUNT(*) FROM faltas WHERE escola_id = ? AND YEAR(data_falta) = YEAR(CURDATE())) AS totalFaltasAno
+    `, [e, e, e, e, e, e]);
 
     const [porDisciplina] = await pool.query(`
       SELECT d.nome, COUNT(f.id) AS total
       FROM disciplinas d
       LEFT JOIN professor_disciplinas pd ON pd.disciplina_id = d.id
       LEFT JOIN faltas f ON f.professor_id = pd.professor_id
+      WHERE d.escola_id = ?
       GROUP BY d.id
       ORDER BY total DESC
       LIMIT 8
-    `);
+    `, [e]);
 
-    const [professores] = await pool.query('SELECT id, nome FROM professores ORDER BY nome ASC');
+    const [professores] = await pool.query('SELECT id, nome FROM professores WHERE escola_id = ? ORDER BY nome ASC', [e]);
 
     const taxaJustificacao = resumo.totalFaltas > 0
       ? Math.round((resumo.totalJustificadas / resumo.totalFaltas) * 100)
@@ -95,7 +102,7 @@ router.get('/', async (req, res, next) => {
 // EXPORTAR CSV (abre no Excel: separador ";" e BOM UTF-8 para os acentos)
 router.get('/exportar.csv', async (req, res, next) => {
   try {
-    const { faltas } = await obterFaltasFiltradas(req.query);
+    const { faltas } = await obterFaltasFiltradas(req.escolaId, req.query);
 
     const celula = (valor) => {
       const texto = String(valor ?? '').replace(/\r?\n/g, ' ');
@@ -127,7 +134,7 @@ router.get('/exportar.csv', async (req, res, next) => {
 // EXPORTAR PDF (resumo + faltas por professor + lista detalhada)
 router.get('/exportar.pdf', async (req, res, next) => {
   try {
-    const { faltas, descricao } = await obterFaltasFiltradas(req.query);
+    const { faltas, descricao } = await obterFaltasFiltradas(req.escolaId, req.query);
 
     const total = faltas.length;
     const justificadas = faltas.filter((f) => f.justificada).length;
@@ -141,6 +148,8 @@ router.get('/exportar.pdf', async (req, res, next) => {
       return acc;
     }, {})).sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome));
 
+    const NOME_ESCOLA = res.locals.escola.nome;
+    const LOGO = ficheiroLogo(res.locals.escola.logo);
     const doc = new PDFDocument({ size: 'A4', margin: 40, bufferPages: true, info: { Title: 'Relatório de Faltas', Author: NOME_ESCOLA } });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="relatorio_faltas${sufixoFicheiro(req.query)}.pdf"`);
@@ -154,7 +163,9 @@ router.get('/exportar.pdf', async (req, res, next) => {
     const limiteInferior = () => doc.page.height - doc.page.margins.bottom - 30;
 
     // Cabeçalho
-    try { doc.image(LOGO, esq, 36, { width: 56 }); } catch (e) { /* sem logótipo */ }
+    if (LOGO) {
+      try { doc.image(LOGO, esq, 36, { width: 56 }); } catch (e) { /* logótipo ilegível: segue sem ele */ }
+    }
     doc.fillColor(VERDE).font('Helvetica-Bold').fontSize(16).text('Relatório de Faltas dos Professores', esq + 70, 42);
     doc.fillColor(CINZA).font('Helvetica').fontSize(10).text(NOME_ESCOLA, esq + 70, 63);
     doc.fontSize(9).text(`Gerado em ${new Date().toLocaleDateString('pt-PT')} às ${new Date().toTimeString().slice(0, 5)}`, esq + 70, 78);

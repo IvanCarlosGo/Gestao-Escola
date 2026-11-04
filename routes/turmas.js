@@ -40,8 +40,9 @@ router.get('/', async (req, res, next) => {
         (SELECT COUNT(*) FROM professor_turmas pt WHERE pt.turma_id = t.id) AS total_professores,
         (SELECT COUNT(*) FROM horarios h WHERE h.turma_id = t.id) AS total_aulas
       FROM turmas t
+      WHERE t.escola_id = ?
       ORDER BY t.nome ASC
-    `);
+    `, [req.escolaId]);
 
     res.render('turmas/list', {
       pageTitle: 'Turmas',
@@ -65,7 +66,7 @@ router.post('/', async (req, res, next) => {
   const turma = dadosDoForm(req.body);
   try {
     if (turma.erro) return renderForm(res, turma, turma.erro);
-    await pool.query('INSERT INTO turmas (nome, ano_letivo) VALUES (?, ?)', [turma.nome, turma.ano_letivo || '2025/2026']);
+    await pool.query('INSERT INTO turmas (escola_id, nome, ano_letivo) VALUES (?, ?, ?)', [req.escolaId, turma.nome, turma.ano_letivo || '2025/2026']);
     res.redirect(`/turmas?success=${encodeURIComponent(`Turma ${turma.nome} criada com sucesso.`)}`);
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') return renderForm(res, turma, `Já existe a turma ${turma.nome}.`);
@@ -76,7 +77,7 @@ router.post('/', async (req, res, next) => {
 // FORMULÁRIO EDITAR
 router.get('/:id/editar', async (req, res, next) => {
   try {
-    const [[turma]] = await pool.query('SELECT * FROM turmas WHERE id = ?', [req.params.id]);
+    const [[turma]] = await pool.query('SELECT * FROM turmas WHERE id = ? AND escola_id = ?', [req.params.id, req.escolaId]);
     if (!turma) return res.status(404).render('404', { pageTitle: 'Não encontrado', activePage: '' });
     renderForm(res, turma, null);
   } catch (err) {
@@ -89,7 +90,7 @@ router.put('/:id', async (req, res, next) => {
   const turma = { ...dadosDoForm(req.body), id: req.params.id };
   try {
     if (turma.erro) return renderForm(res, turma, turma.erro);
-    await pool.query('UPDATE turmas SET nome = ?, ano_letivo = ? WHERE id = ?', [turma.nome, turma.ano_letivo || '2025/2026', req.params.id]);
+    await pool.query('UPDATE turmas SET nome = ?, ano_letivo = ? WHERE id = ? AND escola_id = ?', [turma.nome, turma.ano_letivo || '2025/2026', req.params.id, req.escolaId]);
     res.redirect(`/turmas?success=${encodeURIComponent(`Turma ${turma.nome} atualizada com sucesso.`)}`);
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') return renderForm(res, turma, `Já existe a turma ${turma.nome}.`);
@@ -100,7 +101,7 @@ router.put('/:id', async (req, res, next) => {
 // ELIMINAR
 router.delete('/:id', async (req, res, next) => {
   try {
-    await pool.query('DELETE FROM turmas WHERE id = ?', [req.params.id]);
+    await pool.query('DELETE FROM turmas WHERE id = ? AND escola_id = ?', [req.params.id, req.escolaId]);
     res.redirect('/turmas?success=Turma eliminada.');
   } catch (err) {
     next(err);

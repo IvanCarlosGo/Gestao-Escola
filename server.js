@@ -7,6 +7,7 @@ const methodOverride = require('method-override');
 const { waitForDatabase } = require('./config/db');
 const { iniciais, avatarCor, MOTIVOS_FALTA, dataCurta, dataNumerica } = require('./config/ui');
 const { carregarUtilizador, exigirLogin, verificarPermissao, prepararUtilizadores } = require('./config/auth');
+const { migrar } = require('./config/migracoes');
 
 const indexRoutes = require('./routes/index');
 const professoresRoutes = require('./routes/professores');
@@ -84,6 +85,7 @@ app.use((err, req, res, next) => {
 async function start() {
   try {
     await waitForDatabase();
+    await migrar();
     await prepararUtilizadores();
     app.listen(PORT, () => {
       console.log(`Servidor a correr em http://localhost:${PORT}`);
