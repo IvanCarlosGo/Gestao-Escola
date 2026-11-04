@@ -1883,3 +1883,8 @@ a.user-avatar:hover { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35); }
   .mini-stats-6 { grid-template-columns: repeat(2, 1fr); }
   .painel-tag { display: none; }
 }
+
+/* Barra lateral da escola: sigla em destaque e nome completo por baixo (pode ocupar 2–3 linhas) */
+.brand-escola { min-width: 0; }
+.brand-escola strong { letter-spacing: 0.02em; }
+.brand-escola span { font-size: 11.5px; line-height: 1.35; margin-top: 2px; white-space: normal; }

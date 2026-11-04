@@ -8,9 +8,10 @@
         <i class="fa-solid fa-graduation-cap brand-fallback"></i>
       <% } %>
     </div>
-    <div class="brand-text">
-      <strong>Gestão Escolar</strong>
-      <span title="<%= escolaAtual ? escolaAtual.nome : '' %>"><%= escolaAtual ? (escolaAtual.sigla || escolaAtual.nome) : 'Faltas dos Professores' %></span>
+    <%# Sigla em destaque e, por baixo, o nome completo da escola %>
+    <div class="brand-text brand-escola">
+      <strong><%= escolaAtual ? (escolaAtual.sigla || 'Gestão Escolar') : 'Gestão Escolar' %></strong>
+      <span><%= escolaAtual ? escolaAtual.nome : 'Faltas dos Professores' %></span>
     </div>
   </div>
 
