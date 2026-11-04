@@ -12,6 +12,19 @@ const pool = mysql.createPool({
   dateStrings: true
 });
 
+// O MySQL corre em UTC: cada ligação passa a usar o fuso horário da aplicação (variável TZ),
+// para que CURDATE()/NOW() coincidam com a hora local da escola.
+function offsetLocal() {
+  const minutos = -new Date().getTimezoneOffset();
+  const sinal = minutos >= 0 ? '+' : '-';
+  const abs = Math.abs(minutos);
+  return `${sinal}${String(Math.floor(abs / 60)).padStart(2, '0')}:${String(abs % 60).padStart(2, '0')}`;
+}
+
+pool.on('connection', (connection) => {
+  connection.query(`SET time_zone = '${offsetLocal()}'`);
+});
+
 // Espera até a base de dados estar pronta para aceitar ligações.
 // Útil no arranque com docker-compose, onde o container do MySQL
 // pode demorar alguns segundos a inicializar.

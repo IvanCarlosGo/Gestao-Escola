@@ -28,7 +28,7 @@ services:
         condition: service_healthy
     environment:
       PORT: 3000
-      TZ: Europe/Lisbon
+      TZ: ${TZ:-Atlantic/Cape_Verde}
       DB_HOST: db
       DB_PORT: 3306
       DB_USER: ${DB_USER:-escola_user}
