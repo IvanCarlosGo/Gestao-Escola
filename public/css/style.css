@@ -1722,3 +1722,52 @@ tbody tr:nth-last-child(-n+2):not(:nth-child(-n+2)) .row-menu-list { top: auto; 
 
 .btn-soft { background: #eef1f5; color: #4b5563; border-color: #e2e6ec; }
 .btn-soft:hover { background: #e3e7ed; color: #1f2937; }
+
+/* =========================================================
+   Login, conta e permissões
+   ========================================================= */
+
+.login-body { background: linear-gradient(160deg, var(--color-primary) 0%, var(--color-primary-dark) 100%); }
+
+.login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--color-surface);
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  padding: 32px 30px 26px;
+}
+
+.login-brand { text-align: center; margin-bottom: 22px; }
+.login-brand img { border-radius: 50%; margin-bottom: 10px; }
+.login-brand h1 { font-size: 21px; font-weight: 700; color: var(--color-primary); }
+.login-brand p { margin: 6px 0 0; font-size: 12.5px; color: var(--color-text-muted); }
+
+.login-form { display: flex; flex-direction: column; gap: 16px; }
+.login-form .btn-block { margin-top: 6px; }
+.login-foot { margin: 18px 0 0; text-align: center; font-size: 11.5px; color: var(--color-text-muted); }
+
+/* Botão de terminar sessão na barra lateral (é um <button> dentro de um form) */
+.user-chip form { margin: 0; }
+button.user-logout { background: none; border: none; cursor: pointer; font-size: 16px; }
+a.user-avatar:hover { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35); }
+
+/* Grelha de horário só de leitura (perfil Secretaria) */
+.cell-empty-ro { min-height: 64px; border-radius: var(--radius-md); background: var(--color-surface-soft); border: 1px dashed #e5e8ef; }
+.lesson-ro { cursor: default; }
+.lesson-ro:hover { box-shadow: none; }
+
+.settings-width { max-width: 760px; }
+.settings-card { margin-bottom: 20px; }
+.password-form { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--color-border); }
+.password-form h4 { font-size: 13.5px; margin-bottom: 12px; }
+
+.perfis-info { margin-top: 18px; max-width: 760px; }

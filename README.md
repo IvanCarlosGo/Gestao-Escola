@@ -14,6 +14,7 @@ Aplicação web para gerir professores, turmas, disciplinas, horários e faltas 
 - **Horários** — grelha semanal clicável por turma (e por professor no perfil), com deteção de conflitos
 - **Histórico de Faltas** — lista individual de faltas/atrasos com filtros, justificação com um clique
 - **Relatórios** — estatísticas agregadas e exportação em PDF ou CSV, com filtros
+- **Login e perfis** — Administrador (acesso total e gestão de utilizadores) e Secretaria (consulta, edita e justifica faltas)
 - Interface responsiva (desktop e telemóvel)
 
 ## Estrutura
@@ -44,6 +45,17 @@ docker compose up --build
 - Adminer (gestor visual da BD): http://localhost:8080
   - Sistema: MySQL, Servidor: `db`, Utilizador: `escola_user`, Password: `escola_pass`, Base de dados: `gestao_escolar`
 
+### Primeiro acesso
+
+No primeiro arranque é criado automaticamente um administrador (`ADMIN_EMAIL`, por omissão `admin@escola.cv`).
+Se `ADMIN_PASSWORD` não estiver definido, é gerada uma palavra-passe aleatória e mostrada nos logs:
+
+```bash
+docker logs escola_app | grep -A3 "Administrador criado"
+```
+
+Depois de entrar, altere a palavra-passe em **Definições** e crie as restantes contas em **Utilizadores**.
+
 Os dados ficam persistidos no volume `db-data`. Para recomeçar do zero:
 
 ```bash
@@ -72,6 +84,11 @@ Ajusta o `.env` se necessário (por defeito `DB_HOST=db`, muda para `localhost` 
 | DB_PASSWORD | Password da BD | escola_pass |
 | DB_NAME | Nome da BD | gestao_escolar |
 | DB_ROOT_PASSWORD | Password root do MySQL | root_pass |
+| TZ | Fuso horário da escola (app e MySQL) | Atlantic/Cape_Verde |
+| SESSION_SECRET | Chave secreta das sessões (longa e aleatória) | — (gerada a cada arranque) |
+| ADMIN_EMAIL | Email do administrador criado no primeiro arranque | admin@escola.cv |
+| ADMIN_PASSWORD | Palavra-passe desse administrador | — (gerada e mostrada nos logs) |
+| COOKIE_SECURE | `1` quando a aplicação estiver em HTTPS | 0 |
 
 > Nota: a porta do MySQL exposta ao Windows é **3307** (`docker-compose.yml`), porque a 3306 pode já estar ocupada por outra instalação local de MySQL. Isto não afeta a app, que liga sempre internamente à porta 3306 dentro da rede Docker.
 

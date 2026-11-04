@@ -24,7 +24,7 @@
             <div class="empty-state">
               <i class="fa-solid fa-people-group"></i>
               <p>Ainda não existem turmas. Crie uma turma para começar a montar o horário.</p>
-              <a href="/turmas/novo" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Nova Turma</a>
+              <% if (ehAdmin) { %><a href="/turmas/novo" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Nova Turma</a><% } %>
             </div>
           </div>
         <% } else { %>
@@ -78,7 +78,8 @@
             fixoId: turma.id,
             titulo: 'Horário do ' + turma.nome,
             subtitulo: turma.ano_letivo,
-            redirect: ''
+            redirect: '',
+            podeEditar: ehAdmin
           }) %>
 
           <div class="panel-grid horario-panels">

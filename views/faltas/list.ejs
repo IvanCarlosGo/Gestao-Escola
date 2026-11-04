@@ -109,11 +109,13 @@
                         <a href="/faltas/<%= f.id %>/editar" class="btn btn-outline btn-sm" title="Editar">
                           <i class="fa-solid fa-pen"></i>
                         </a>
+                        <% if (ehAdmin) { %>
                         <form action="/faltas/<%= f.id %>?_method=DELETE" method="POST" data-confirm="Eliminar esta falta?">
                           <button type="submit" class="btn btn-danger-ghost btn-sm" title="Eliminar">
                             <i class="fa-solid fa-trash"></i>
                           </button>
                         </form>
+                        <% } %>
                       </div>
                     </td>
                   </tr>

@@ -6,6 +6,7 @@ const methodOverride = require('method-override');
 
 const { waitForDatabase } = require('./config/db');
 const { iniciais, avatarCor, MOTIVOS_FALTA, dataCurta } = require('./config/ui');
+const { carregarUtilizador, exigirLogin, verificarPermissao, prepararUtilizadores } = require('./config/auth');
 
 const indexRoutes = require('./routes/index');
 const professoresRoutes = require('./routes/professores');
@@ -15,6 +16,8 @@ const disciplinasRoutes = require('./routes/disciplinas');
 const horariosRoutes = require('./routes/horarios');
 const relatoriosRoutes = require('./routes/relatorios');
 const configuracoesRoutes = require('./routes/configuracoes');
+const authRoutes = require('./routes/auth');
+const utilizadoresRoutes = require('./routes/utilizadores');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -40,6 +43,12 @@ app.use((req, res, next) => {
   next();
 });
 
+// Sessão: identifica o utilizador; /login e /logout são públicos, o resto exige sessão e permissão
+app.use(carregarUtilizador);
+app.use('/', authRoutes);
+app.use(exigirLogin);
+app.use(verificarPermissao);
+
 // Rotas
 app.use('/', indexRoutes);
 app.use('/professores', professoresRoutes);
@@ -49,6 +58,7 @@ app.use('/disciplinas', disciplinasRoutes);
 app.use('/horarios', horariosRoutes);
 app.use('/relatorios', relatoriosRoutes);
 app.use('/configuracoes', configuracoesRoutes);
+app.use('/utilizadores', utilizadoresRoutes);
 
 // 404
 app.use((req, res) => {
@@ -61,7 +71,7 @@ app.use((err, req, res, next) => {
   res.status(500).send(`
     <div style="font-family: sans-serif; padding: 40px;">
       <h1>Ocorreu um erro</h1>
-      <pre>${err.message}</pre>
+      <pre>${String(err.message).replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))}</pre>
     </div>
   `);
 });
@@ -69,6 +79,7 @@ app.use((err, req, res, next) => {
 async function start() {
   try {
     await waitForDatabase();
+    await prepararUtilizadores();
     app.listen(PORT, () => {
       console.log(`Servidor a correr em http://localhost:${PORT}`);
     });

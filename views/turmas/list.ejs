@@ -21,7 +21,7 @@
 
         <div class="page-toolbar">
           <div class="page-subtitle">Total: <%= turmas.length %> turma(s)</div>
-          <a href="/turmas/novo" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Nova Turma</a>
+          <% if (ehAdmin) { %><a href="/turmas/novo" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Nova Turma</a><% } %>
         </div>
 
         <% if (turmas.length === 0) { %>
@@ -29,7 +29,7 @@
             <div class="empty-state">
               <i class="fa-solid fa-people-group"></i>
               <p>Ainda não existem turmas registadas.</p>
-              <a href="/turmas/novo" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Adicionar Turma</a>
+              <% if (ehAdmin) { %><a href="/turmas/novo" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Adicionar Turma</a><% } %>
             </div>
           </div>
         <% } else { %>
@@ -52,6 +52,7 @@
                     <td><span class="badge badge-neutral"><%= t.total_professores %></span></td>
                     <td><span class="badge badge-muted"><%= t.total_aulas %></span></td>
                     <td>
+                      <% if (ehAdmin) { %>
                       <div class="actions-cell">
                         <a href="/turmas/<%= t.id %>/editar" class="btn btn-outline btn-sm" title="Editar">
                           <i class="fa-solid fa-pen"></i>
@@ -62,6 +63,7 @@
                           </button>
                         </form>
                       </div>
+                      <% } %>
                     </td>
                   </tr>
                 <% }) %>

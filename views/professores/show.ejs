@@ -47,7 +47,7 @@
               <% } else { %>
                 <span class="badge badge-muted">Inativo</span>
               <% } %>
-              <a href="/professores/<%= professor.id %>/editar" class="btn btn-outline btn-sm" title="Editar perfil"><i class="fa-solid fa-pen"></i> Editar</a>
+              <% if (ehAdmin) { %><a href="/professores/<%= professor.id %>/editar" class="btn btn-outline btn-sm" title="Editar perfil"><i class="fa-solid fa-pen"></i> Editar</a><% } %>
             </div>
           </div>
 
@@ -166,7 +166,7 @@
           <% } %>
 
           <% if (tab === 'horario') { %>
-            <% if (turmas.length === 0 || disciplinas.length === 0) { %>
+            <% if (ehAdmin && (turmas.length === 0 || disciplinas.length === 0)) { %>
               <div class="info-box horario-hint">
                 <i class="fa-solid fa-circle-info"></i>
                 <span>Dica: atribua as turmas e disciplinas deste professor em <a href="/professores/<%= professor.id %>/editar"><strong>Editar</strong></a> — assim aparecem primeiro (e são escolhidas automaticamente) ao clicar na grelha.</span>
@@ -181,7 +181,8 @@
                 grelha,
                 resumo: resumoHorario,
                 opcoes: opcoesHorario,
-                redirect: '/professores/' + professor.id + '?tab=horario'
+                redirect: '/professores/' + professor.id + '?tab=horario',
+                podeEditar: ehAdmin
               }) %>
             </div>
           <% } %>
@@ -190,7 +191,7 @@
             <div class="card inner-card">
               <div class="card-header">
                 <h3>Disciplinas lecionadas</h3>
-                <a href="/professores/<%= professor.id %>/editar" class="link">Editar</a>
+                <% if (ehAdmin) { %><a href="/professores/<%= professor.id %>/editar" class="link">Editar</a><% } %>
               </div>
               <% if (disciplinas.length === 0) { %>
                 <div class="empty-state"><i class="fa-solid fa-book-open"></i><p>Nenhuma disciplina atribuída.</p></div>
@@ -212,7 +213,7 @@
             <div class="card inner-card">
               <div class="card-header">
                 <h3>Turmas atribuídas</h3>
-                <a href="/professores/<%= professor.id %>/editar" class="link">Editar</a>
+                <% if (ehAdmin) { %><a href="/professores/<%= professor.id %>/editar" class="link">Editar</a><% } %>
               </div>
               <% if (turmas.length === 0) { %>
                 <div class="empty-state"><i class="fa-solid fa-people-group"></i><p>Nenhuma turma atribuída.</p></div>

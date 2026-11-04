@@ -8,16 +8,56 @@
     <%- include('partials/sidebar') %>
 
     <div class="main-content">
-      <%- include('partials/topbar', { pageIcon: 'fa-gear', pageSubtitle: 'Preferências gerais do sistema.' }) %>
+      <%- include('partials/topbar', { pageSubtitle: 'A sua conta e informações do sistema.' }) %>
 
       <main class="content-body">
 
-        <div class="card" style="max-width: 760px; margin-bottom: 20px;">
+        <% if (success) { %>
+          <div class="alert alert-success settings-width"><i class="fa-solid fa-circle-check"></i> <%= success %></div>
+        <% } %>
+        <% if (error) { %>
+          <div class="alert alert-danger settings-width"><i class="fa-solid fa-circle-exclamation"></i> <%= error %></div>
+        <% } %>
+
+        <div class="card settings-width settings-card">
+          <div class="card-header"><h3>A minha conta</h3></div>
+          <div class="list-row">
+            <span class="avatar avatar-md <%= avatarCor(utilizador.id) %>"><%= iniciais(utilizador.nome) %></span>
+            <span class="list-row-info">
+              <strong><%= utilizador.nome %></strong>
+              <span><%= utilizador.email %></span>
+            </span>
+            <span class="badge <%= ehAdmin ? 'badge-neutral' : 'badge-muted' %>"><%= nomePerfil %></span>
+          </div>
+
+          <form method="POST" action="/configuracoes/palavra-passe" class="password-form">
+            <h4>Alterar palavra-passe</h4>
+            <div class="form-grid">
+              <div class="form-group full">
+                <label>Palavra-passe atual</label>
+                <input type="password" name="atual" autocomplete="current-password" required>
+              </div>
+              <div class="form-group">
+                <label>Nova palavra-passe</label>
+                <input type="password" name="nova" minlength="8" autocomplete="new-password" required>
+              </div>
+              <div class="form-group">
+                <label>Confirmar nova palavra-passe</label>
+                <input type="password" name="confirmar" minlength="8" autocomplete="new-password" required>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-key"></i> Alterar palavra-passe</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card settings-width settings-card">
           <div class="card-header"><h3>Escola</h3></div>
           <div class="form-grid">
             <div class="form-group full">
               <label>Nome da escola</label>
-              <input type="text" value="Escola Técnica" disabled>
+              <input type="text" value="Escola Secundária Polivalente Cesaltina Ramos" disabled>
             </div>
             <div class="form-group">
               <label>Ano letivo</label>
@@ -25,42 +65,18 @@
             </div>
             <div class="form-group">
               <label>Fuso horário</label>
-              <input type="text" value="Europe/Lisbon" disabled>
+              <input type="text" value="<%= fusoHorario %>" disabled>
             </div>
           </div>
-        </div>
-
-        <div class="card" style="max-width: 760px;">
-          <div class="card-header"><h3>Preferências</h3></div>
-
-          <div class="settings-section">
-            <div>
-              <h4>Notificações por email</h4>
-              <p>Enviar um resumo diário de faltas por justificar ao administrador.</p>
+          <% if (ehAdmin) { %>
+            <div class="settings-section">
+              <div>
+                <h4>Utilizadores</h4>
+                <p>Criar contas, definir perfis e redefinir palavras-passe.</p>
+              </div>
+              <a href="/utilizadores" class="btn btn-outline btn-sm">Gerir utilizadores</a>
             </div>
-            <div class="toggle-switch on"></div>
-          </div>
-
-          <div class="settings-section">
-            <div>
-              <h4>Aprovação obrigatória de justificações</h4>
-              <p>Uma falta só fica "Justificada" depois de validada pela direção.</p>
-            </div>
-            <div class="toggle-switch"></div>
-          </div>
-
-          <div class="settings-section">
-            <div>
-              <h4>Modo escuro</h4>
-              <p>Em breve.</p>
-            </div>
-            <div class="toggle-switch"></div>
-          </div>
-        </div>
-
-        <div class="info-box" style="max-width: 760px; margin-top: 20px;">
-          <i class="fa-solid fa-circle-info"></i>
-          <span>Esta página é uma pré-visualização — as preferências ainda não são guardadas na base de dados.</span>
+          <% } %>
         </div>
 
       </main>

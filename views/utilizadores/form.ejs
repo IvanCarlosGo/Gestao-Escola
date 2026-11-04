@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body>
+  <div class="app-layout">
+    <%- include('../partials/sidebar') %>
+
+    <div class="main-content">
+      <%- include('../partials/topbar') %>
+
+      <main class="content-body">
+
+        <% if (error) { %>
+          <div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i> <%= error %></div>
+        <% } %>
+
+        <div class="form-card">
+          <form method="POST" action="<%= conta.id ? '/utilizadores/' + conta.id + '?_method=PUT' : '/utilizadores' %>" autocomplete="off">
+            <div class="form-grid">
+              <div class="form-group full">
+                <label>Nome <span class="req">*</span></label>
+                <input type="text" name="nome" value="<%= conta.nome || '' %>" required maxlength="100">
+              </div>
+
+              <div class="form-group full">
+                <label>Email <span class="req">*</span></label>
+                <input type="email" name="email" value="<%= conta.email || '' %>" required maxlength="150">
+              </div>
+
+              <div class="form-group">
+                <label>Perfil <span class="req">*</span></label>
+                <select name="perfil" required>
+                  <% Object.entries(perfis).forEach(([valor, nome]) => { %>
+                    <option value="<%= valor %>" <%= conta.perfil === valor ? 'selected' : '' %>><%= nome %></option>
+                  <% }) %>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>&nbsp;</label>
+                <div class="checkbox-row">
+                  <input type="checkbox" id="ativo" name="ativo" value="1" <%= conta.ativo ? 'checked' : '' %>>
+                  <label for="ativo">Conta ativa (pode entrar)</label>
+                </div>
+              </div>
+
+              <div class="form-group full">
+                <label>
+                  Palavra-passe <%- conta.id ? '<span class="hint">(deixe em branco para manter a atual)</span>' : '<span class="req">*</span>' %>
+                </label>
+                <input type="password" name="palavra_passe" minlength="8" autocomplete="new-password" <%= conta.id ? '' : 'required' %>>
+                <span class="hint">Mínimo 8 caracteres.</span>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <a href="/utilizadores" class="btn btn-outline">Cancelar</a>
+              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar</button>
+            </div>
+          </form>
+        </div>
+
+      </main>
+    </div>
+  </div>
+  <%- include('../partials/scripts') %>
+</body>
+</html>

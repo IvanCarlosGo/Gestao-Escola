@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <%- include('partials/head') %>
+</head>
+<body class="login-body">
+  <main class="login-wrap">
+    <div class="login-card">
+      <div class="login-brand">
+        <img src="/img/logo.jpg" alt="Logótipo E.S.P.C.R" width="84" height="84">
+        <h1>Gestão Escolar</h1>
+        <p>Escola Secundária Polivalente Cesaltina Ramos</p>
+      </div>
+
+      <% if (error) { %>
+        <div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i> <%= error %></div>
+      <% } %>
+
+      <form method="POST" action="/login" class="login-form">
+        <input type="hidden" name="next" value="<%= next %>">
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" value="<%= email %>" autocomplete="username" required autofocus>
+        </div>
+
+        <div class="form-group">
+          <label for="palavra_passe">Palavra-passe</label>
+          <input type="password" id="palavra_passe" name="palavra_passe" autocomplete="current-password" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">
+          <i class="fa-solid fa-right-to-bracket"></i> Entrar
+        </button>
+      </form>
+
+      <p class="login-foot">Esqueceu-se da palavra-passe? Peça ao administrador para a redefinir.</p>
+    </div>
+  </main>
+</body>
+</html>

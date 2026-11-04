@@ -10,7 +10,7 @@
     <div class="main-content">
       <%- include('../partials/topbar', {
         pageSubtitle: 'Lista de todos os professores da escola.',
-        pageAction: '<a href="/professores/novo" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Novo Professor</a>'
+        pageAction: ehAdmin ? '<a href="/professores/novo" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Novo Professor</a>' : ''
       }) %>
 
       <main class="content-body">
@@ -34,7 +34,7 @@
             <div class="empty-state">
               <i class="fa-solid fa-user-group"></i>
               <p>Nenhum professor encontrado.</p>
-              <a href="/professores/novo" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Adicionar Professor</a>
+              <% if (ehAdmin) { %><a href="/professores/novo" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Adicionar Professor</a><% } %>
             </div>
           <% } else { %>
             <table>
@@ -66,10 +66,12 @@
                         <div class="row-menu-list">
                           <a href="/professores/<%= p.id %>"><i class="fa-regular fa-eye"></i> Ver detalhe</a>
                           <a href="/professores/<%= p.id %>?tab=horario"><i class="fa-regular fa-calendar"></i> Horário</a>
+                          <% if (ehAdmin) { %>
                           <a href="/professores/<%= p.id %>/editar"><i class="fa-solid fa-pen"></i> Editar</a>
                           <form action="/professores/<%= p.id %>?_method=DELETE" method="POST" data-confirm="Eliminar este professor e todas as suas faltas?">
                             <button type="submit" class="danger"><i class="fa-regular fa-trash-can"></i> Eliminar</button>
                           </form>
+                          <% } %>
                         </div>
                       </details>
                     </td>

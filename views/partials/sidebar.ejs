@@ -36,21 +36,33 @@
       <span class="nav-icon"><i class="fa-solid fa-book-open"></i></span>
       <span>Disciplinas</span>
     </a>
+    <% if (typeof ehAdmin !== 'undefined' && ehAdmin) { %>
+      <a href="/utilizadores" class="nav-item <%= activePage === 'utilizadores' ? 'active' : '' %>">
+        <span class="nav-icon"><i class="fa-solid fa-user-shield"></i></span>
+        <span>Utilizadores</span>
+      </a>
+    <% } %>
     <a href="/configuracoes" class="nav-item <%= activePage === 'configuracoes' ? 'active' : '' %>">
       <span class="nav-icon"><i class="fa-solid fa-gear"></i></span>
       <span>Definições</span>
     </a>
   </nav>
 
-  <div class="sidebar-footer">
-    <div class="user-chip">
-      <span class="user-avatar">IG</span>
-      <span class="user-info">
-        <strong>Ivan Gonçalves</strong>
-        <span>Administrador</span>
-      </span>
-      <a href="/" class="user-logout" title="Terminar sessão"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+  <% if (typeof utilizador !== 'undefined' && utilizador) { %>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <a href="/configuracoes" class="user-avatar" title="A minha conta"><%= iniciais(utilizador.nome) %></a>
+        <span class="user-info">
+          <strong><%= utilizador.nome %></strong>
+          <span><%= nomePerfil %></span>
+        </span>
+        <form method="POST" action="/logout">
+          <button type="submit" class="user-logout" title="Terminar sessão" aria-label="Terminar sessão">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          </button>
+        </form>
+      </div>
     </div>
-  </div>
+  <% } %>
 </aside>
 <div class="sidebar-overlay" id="sidebarOverlay"></div>

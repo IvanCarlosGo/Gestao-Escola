@@ -21,7 +21,7 @@
 
         <div class="page-toolbar">
           <div class="page-subtitle">Total: <%= disciplinas.length %> disciplina(s)</div>
-          <a href="/disciplinas/novo" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Nova Disciplina</a>
+          <% if (ehAdmin) { %><a href="/disciplinas/novo" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Nova Disciplina</a><% } %>
         </div>
 
         <% if (disciplinas.length === 0) { %>
@@ -29,7 +29,7 @@
             <div class="empty-state">
               <i class="fa-solid fa-book"></i>
               <p>Ainda não existem disciplinas registadas.</p>
-              <a href="/disciplinas/novo" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Adicionar Disciplina</a>
+              <% if (ehAdmin) { %><a href="/disciplinas/novo" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Adicionar Disciplina</a><% } %>
             </div>
           </div>
         <% } else { %>
@@ -50,6 +50,7 @@
                     <td><span class="badge badge-neutral"><%= d.total_professores %></span></td>
                     <td><span class="badge badge-muted"><%= d.total_aulas %></span></td>
                     <td>
+                      <% if (ehAdmin) { %>
                       <div class="actions-cell">
                         <a href="/disciplinas/<%= d.id %>/editar" class="btn btn-outline btn-sm" title="Editar">
                           <i class="fa-solid fa-pen"></i>
@@ -60,6 +61,7 @@
                           </button>
                         </form>
                       </div>
+                      <% } %>
                     </td>
                   </tr>
                 <% }) %>

@@ -1,9 +1,11 @@
 <%#
   Grelha semanal editável, partilhada pela página Horários (modo 'turma') e pelo perfil do professor (modo 'professor').
-  Parâmetros: modo, fixoId, titulo, subtitulo, grelha, slots, diasSemana, resumo, opcoes, redirect
+  Parâmetros: modo, fixoId, titulo, subtitulo, grelha, slots, diasSemana, resumo, opcoes, redirect, podeEditar (opcional)
 %>
 <%
   const porProfessor = modo === 'professor';
+  // Sem permissão de edição (perfil Secretaria) a grelha fica só de leitura
+  const editavel = locals.podeEditar !== false;
   const paleta = [
     ['#e7efea', '#b9cfc1', '#223C2F'], ['#eff4ff', '#c7d7fe', '#1e40af'],
     ['#f5f3ff', '#ddd6fe', '#5b21b6'], ['#fff7ed', '#fed7aa', '#9a3412'],
@@ -51,7 +53,9 @@
                    const ocupam = grelha[d.key][slot.inicio];
               %>
                 <td class="editor-cell <%= ocupam.length > 1 ? 'has-conflict' : '' %>">
-                  <% if (ocupam.length === 0) { %>
+                  <% if (ocupam.length === 0 && !editavel) { %>
+                    <div class="cell-empty-ro"></div>
+                  <% } else if (ocupam.length === 0) { %>
                     <button type="button" class="cell-add" data-nova-aula data-dia="<%= d.key %>" data-inicio="<%= slot.inicio %>"
                             aria-label="Adicionar aula: <%= d.label %>, <%= slot.inicio %>">
                       <i class="fa-solid fa-plus"></i>
@@ -63,7 +67,7 @@
                       </span>
                     <% } %>
                     <% ocupam.forEach(a => { const c = cor(a); %>
-                      <button type="button" class="lesson <%= a.comecaAqui ? '' : 'lesson-cont' %>" data-editar-aula='<%= dadosAula(a) %>'
+                      <<%- editavel ? 'button type="button"' : 'div' %> class="lesson <%= a.comecaAqui ? '' : 'lesson-cont' %> <%= editavel ? '' : 'lesson-ro' %>" <% if (editavel) { %>data-editar-aula='<%= dadosAula(a) %>'<% } %>
                               style="--lesson-bg: <%= c[0] %>; --lesson-border: <%= c[1] %>; --lesson-text: <%= c[2] %>;">
                         <% if (a.comecaAqui) { %>
                           <strong><%= a.disciplina_nome %></strong>
@@ -72,7 +76,7 @@
                         <% } else { %>
                           <span class="lesson-cont-label"><i class="fa-solid fa-arrow-turn-up fa-rotate-90"></i> <%= a.disciplina_nome %> (cont.)</span>
                         <% } %>
-                      </button>
+                      </<%- editavel ? 'button' : 'div' %>>
                     <% }) %>
                   <% } %>
                 </td>
@@ -85,6 +89,7 @@
   </div>
 </div>
 
+<% if (editavel) { %>
 <!-- Modal adicionar / editar aula -->
 <div class="modal-backdrop" id="aulaModal" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="aulaModalTitulo">
@@ -313,3 +318,4 @@
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fechar(); });
   })();
 </script>
+<% } %>
