@@ -5,6 +5,7 @@ const { pool } = require('../../config/db');
 const { SQL_ESCOLAS_RESUMO } = require('./visao-geral');
 const { guardarLogo, apagarLogo } = require('../logo');
 const { validarConta, normalizarConta, criarConta } = require('../contas');
+const { COR_PADRAO, CORES_SUGERIDAS, validarCor } = require('../../config/cores');
 
 const voltar = (res, destino, chave, msg) => res.redirect(`${destino}${destino.includes('?') ? '&' : '?'}${chave}=${encodeURIComponent(msg)}`);
 const naoEncontrada = (res) => res.status(404).render('404', { pageTitle: 'Não encontrada', activePage: 'escolas' });
@@ -14,6 +15,7 @@ function dadosEscola(body) {
     nome: String(body.nome || '').trim(),
     sigla: String(body.sigla || '').trim(),
     ativo: body.ativo ? 1 : 0,
+    cor: String(body.cor || COR_PADRAO).trim().toUpperCase(),
     logo_dados: body.logo_dados || ''
   };
 }
@@ -24,6 +26,8 @@ function renderForm(res, escola, error, adminInicial = {}) {
     activePage: 'escolas',
     escola,
     adminInicial,
+    cores: CORES_SUGERIDAS,
+    corPadrao: COR_PADRAO,
     error
   });
 }
@@ -56,12 +60,14 @@ router.post('/', async (req, res, next) => {
   const repetir = (msg) => renderForm(res, escola, msg, { ...admin, criar: criarAdmin });
   try {
     if (!escola.nome) return repetir('Indique o nome da escola.');
+    const erroCor = validarCor(escola.cor);
+    if (erroCor) return repetir(erroCor);
     if (criarAdmin) {
       const erroAdmin = validarConta(admin, { criar: true });
       if (erroAdmin) return repetir(`Administrador: ${erroAdmin}`);
     }
 
-    const [r] = await pool.query('INSERT INTO escolas (nome, sigla, ativo) VALUES (?, ?, ?)', [escola.nome, escola.sigla || null, escola.ativo]);
+    const [r] = await pool.query('INSERT INTO escolas (nome, sigla, cor, ativo) VALUES (?, ?, ?, ?)', [escola.nome, escola.sigla || null, escola.cor, escola.ativo]);
     const id = r.insertId;
 
     if (escola.logo_dados) {
@@ -136,6 +142,8 @@ router.put('/:id', async (req, res, next) => {
     if (!atual) return naoEncontrada(res);
     const escola = { ...dadosEscola(req.body), id: atual.id, logo: atual.logo };
     if (!escola.nome) return renderForm(res, escola, 'Indique o nome da escola.');
+    const erroCor = validarCor(escola.cor);
+    if (erroCor) return renderForm(res, escola, erroCor);
 
     let logo = atual.logo;
     if (escola.logo_dados) {
@@ -147,8 +155,8 @@ router.put('/:id', async (req, res, next) => {
     }
     if (logo !== atual.logo) await apagarLogo(atual.logo);
 
-    await pool.query('UPDATE escolas SET nome = ?, sigla = ?, ativo = ?, logo = ? WHERE id = ?',
-      [escola.nome, escola.sigla || null, escola.ativo, logo, atual.id]);
+    await pool.query('UPDATE escolas SET nome = ?, sigla = ?, cor = ?, ativo = ?, logo = ? WHERE id = ?',
+      [escola.nome, escola.sigla || null, escola.cor, escola.ativo, logo, atual.id]);
     voltar(res, `/escolas/${atual.id}`, 'success', 'Escola atualizada.');
   } catch (err) {
     next(err);

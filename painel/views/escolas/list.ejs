@@ -23,7 +23,7 @@
                 <%- include('../partials/escola-logo', { e, tamanho: 'sm' }) %>
                 <span>
                   <span class="cell-name"><%= e.nome %></span>
-                  <% if (e.sigla) { %><span class="cell-sub"><%= e.sigla %></span><% } %>
+                  <span class="cell-sub"><span class="cor-ponto" style="--ponto: <%= e.cor || '#223C2F' %>"></span><%= e.sigla || '' %></span>
                 </span>
               </a>
             </td>

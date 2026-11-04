@@ -1,6 +1,7 @@
 // Autenticação: palavras-passe (scrypt), sessão em cookie assinado (HMAC) e permissões por perfil.
 const crypto = require('crypto');
 const { pool } = require('./db');
+const { temaDaCor } = require('./cores');
 
 const COOKIE = 'sessao';
 const DURACAO_SESSAO_MS = 8 * 60 * 60 * 1000; // 8 horas
@@ -11,7 +12,7 @@ const PERFIS_WEB = ['admin', 'secretaria'];
 // Utilizador ativo de uma escola ativa (usado pelo site e pela API)
 const SQL_UTILIZADOR_ATIVO = `
   SELECT u.id, u.nome, u.email, u.perfil, u.escola_id,
-    e.nome AS escola_nome, e.sigla AS escola_sigla, e.logo AS escola_logo
+    e.nome AS escola_nome, e.sigla AS escola_sigla, e.logo AS escola_logo, e.cor AS escola_cor
   FROM utilizadores u JOIN escolas e ON e.id = u.escola_id AND e.ativo = 1
   WHERE u.id = ? AND u.ativo = 1`;
 
@@ -105,8 +106,10 @@ async function carregarUtilizador(req, res, next) {
           id: utilizador.escola_id,
           nome: utilizador.escola_nome,
           sigla: utilizador.escola_sigla,
-          logo: utilizador.escola_logo
+          logo: utilizador.escola_logo,
+          cor: utilizador.escola_cor
         };
+        res.locals.temaEscola = temaDaCor(utilizador.escola_cor);
         res.locals.utilizador = utilizador;
         res.locals.ehAdmin = utilizador.perfil === 'admin';
         res.locals.nomePerfil = PERFIS[utilizador.perfil] || utilizador.perfil;

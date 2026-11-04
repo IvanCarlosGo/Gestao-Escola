@@ -3,6 +3,7 @@ const path = require('path');
 const PDFDocument = require('pdfkit');
 const router = express.Router();
 const { pool } = require('../config/db');
+const { temaDaCor, COR_PADRAO } = require('../config/cores');
 
 const PASTA_PUBLICA = path.join(__dirname, '..', 'public');
 
@@ -155,7 +156,7 @@ router.get('/exportar.pdf', async (req, res, next) => {
     res.setHeader('Content-Disposition', `attachment; filename="relatorio_faltas${sufixoFicheiro(req.query)}.pdf"`);
     doc.pipe(res);
 
-    const VERDE = '#223C2F';
+    const VERDE = temaDaCor(res.locals.escola.cor) ? res.locals.escola.cor : COR_PADRAO; // cor da escola
     const CINZA = '#6b7280';
     const LINHA = '#e5e8ef';
     const esq = doc.page.margins.left;

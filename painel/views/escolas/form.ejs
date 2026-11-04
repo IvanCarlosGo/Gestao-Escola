@@ -19,6 +19,39 @@
         </div>
       </div>
 
+      <% const corAtual = String(escola.cor || corPadrao).toUpperCase(); %>
+      <div class="form-group full">
+        <label>Cor da escola <span class="hint">(cor principal do site da escola: menu, botões e destaques)</span></label>
+        <input type="hidden" name="cor" id="corEscola" value="<%= corAtual %>">
+        <div class="cor-escolha">
+          <div class="cor-opcoes" role="radiogroup" aria-label="Cor da escola">
+            <% cores.forEach(c => { %>
+              <button type="button" class="cor-amostra <%= c.cor === corAtual ? 'ativa' : '' %>" data-cor="<%= c.cor %>"
+                      style="--amostra: <%= c.cor %>" title="<%= c.nome %>" aria-label="<%= c.nome %>" role="radio"
+                      aria-checked="<%= c.cor === corAtual %>"></button>
+            <% }) %>
+            <label class="cor-livre" title="Outra cor">
+              <input type="color" id="corLivre" value="<%= corAtual.toLowerCase() %>">
+              <span>Outra cor</span>
+            </label>
+          </div>
+
+          <div class="cor-preview" id="corPreview" style="--previa: <%= corAtual %>">
+            <div class="cor-preview-menu">
+              <span class="cor-preview-sigla"><%= escola.sigla || 'Escola' %></span>
+              <span class="cor-preview-item ativo">Dashboard</span>
+              <span class="cor-preview-item">Professores</span>
+            </div>
+            <div class="cor-preview-corpo">
+              <span class="cor-preview-botao">Guardar</span>
+              <span class="cor-preview-link">Ver todos →</span>
+              <span class="cor-preview-badge">Destaque</span>
+            </div>
+          </div>
+        </div>
+        <span class="hint" id="corInfo"><%= corAtual %></span>
+      </div>
+
       <div class="form-group full">
         <label>Logótipo <span class="hint">(PNG, JPG ou WEBP, até 1 MB)</span></label>
         <div class="logo-upload">
@@ -70,6 +103,42 @@
 
 <script>
   (() => {
+    // Cor da escola: sugestões ou cor livre, com pré-visualização e aviso de contraste (o servidor valida de novo)
+    const campoCor = document.getElementById('corEscola');
+    const livre = document.getElementById('corLivre');
+    const previa = document.getElementById('corPreview');
+    const info = document.getElementById('corInfo');
+    const amostras = document.querySelectorAll('.cor-amostra');
+
+    const contrasteComBranco = (hex) => {
+      const n = parseInt(hex.slice(1), 16);
+      const lum = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+        .map((v) => v / 255)
+        .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
+        .reduce((s, c, i) => s + c * [0.2126, 0.7152, 0.0722][i], 0);
+      return 1.05 / (lum + 0.05);
+    };
+
+    function escolherCor(hex) {
+      const cor = hex.toUpperCase();
+      campoCor.value = cor;
+      livre.value = cor.toLowerCase();
+      previa.style.setProperty('--previa', cor);
+      amostras.forEach((a) => {
+        const ativa = a.dataset.cor === cor;
+        a.classList.toggle('ativa', ativa);
+        a.setAttribute('aria-checked', ativa);
+      });
+      const clara = contrasteComBranco(cor) < 4.5;
+      info.textContent = clara
+        ? `${cor} — demasiado clara: o texto branco ficaria difícil de ler. Escolha um tom mais escuro.`
+        : cor;
+      info.classList.toggle('text-danger', clara);
+    }
+
+    amostras.forEach((a) => a.addEventListener('click', () => escolherCor(a.dataset.cor)));
+    livre.addEventListener('input', () => escolherCor(livre.value));
+
     // Logótipo: lido no browser e enviado como data URL (o servidor valida tipo, tamanho e conteúdo)
     const ficheiro = document.getElementById('logoFicheiro');
     const dados = document.getElementById('logoDados');

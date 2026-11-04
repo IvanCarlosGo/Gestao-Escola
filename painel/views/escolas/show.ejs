@@ -7,6 +7,7 @@
     <div class="profile-meta">
       <% if (escola.ativo) { %><span class="badge badge-success">Ativa</span><% } else { %><span class="badge badge-danger">Suspensa — os utilizadores não conseguem entrar</span><% } %>
       <span><i class="fa-regular fa-calendar"></i> Registada em <%= dataCurta(escola.criado_em) %></span>
+      <span><span class="cor-ponto" style="--ponto: <%= escola.cor || '#223C2F' %>"></span>Cor <%= escola.cor || 'por omissão' %></span>
     </div>
   </div>
   <div class="profile-actions">

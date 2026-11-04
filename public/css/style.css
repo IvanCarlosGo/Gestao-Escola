@@ -1888,3 +1888,47 @@ a.user-avatar:hover { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35); }
 .brand-escola { min-width: 0; }
 .brand-escola strong { letter-spacing: 0.02em; }
 .brand-escola span { font-size: 11.5px; line-height: 1.35; margin-top: 2px; white-space: normal; }
+
+/* Painel: escolha da cor da escola */
+.cor-escolha { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+.cor-opcoes { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; max-width: 330px; }
+
+.cor-amostra {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  background: var(--amostra);
+  box-shadow: 0 0 0 1px var(--color-border);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.cor-amostra:hover { transform: scale(1.08); }
+.cor-amostra.ativa { box-shadow: 0 0 0 2px var(--amostra), 0 0 0 4px #fff, 0 0 0 5px var(--color-border); }
+.cor-amostra:focus-visible { outline: 2px solid var(--color-text); outline-offset: 3px; }
+
+.cor-livre { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--color-text-muted); cursor: pointer; }
+.cor-livre input { width: 34px; height: 34px; padding: 0; border: 1px solid var(--color-border); border-radius: 50%; background: none; cursor: pointer; }
+.cor-livre input::-webkit-color-swatch-wrapper { padding: 2px; }
+.cor-livre input::-webkit-color-swatch { border: none; border-radius: 50%; }
+
+.cor-preview {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  width: 300px;
+  height: 120px;
+  font-size: 11px;
+}
+.cor-preview-menu { width: 110px; background: var(--previa); color: #fff; padding: 10px 8px; display: flex; flex-direction: column; gap: 6px; }
+.cor-preview-sigla { font-weight: 700; font-size: 12px; margin-bottom: 4px; }
+.cor-preview-item { padding: 4px 6px; border-radius: 4px; opacity: 0.85; }
+.cor-preview-item.ativo { background: rgba(255, 255, 255, 0.16); opacity: 1; font-weight: 600; }
+.cor-preview-corpo { flex: 1; background: var(--color-bg); padding: 14px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.cor-preview-botao { background: var(--previa); color: #fff; padding: 5px 12px; border-radius: 6px; font-weight: 600; }
+.cor-preview-link { color: var(--previa); font-weight: 600; }
+.cor-preview-badge { background: color-mix(in srgb, var(--previa) 12%, #fff); color: var(--previa); padding: 2px 10px; border-radius: 999px; font-weight: 600; }
+
+/* Amostra de cor na lista/detalhe de escolas do painel */
+.cor-ponto { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: var(--ponto); vertical-align: middle; margin-right: 6px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08); }

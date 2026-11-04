@@ -91,6 +91,12 @@ async function aplicarMigracoes() {
     console.log(`[migração] ${tabela}: escola_id adicionado`);
   }
 
+  // Cor da escola (tema do site da escola); NULL = cor por omissão
+  if (!(await colunaExiste('escolas', 'cor'))) {
+    await pool.query('ALTER TABLE escolas ADD COLUMN cor VARCHAR(7) NULL AFTER logo');
+    console.log('[migração] escolas: coluna cor adicionada');
+  }
+
   await unicoPorEscola('turmas', 'nome', 'nome');
   await unicoPorEscola('disciplinas', 'nome', 'nome');
   await unicoPorEscola('professores', 'email', 'email');
