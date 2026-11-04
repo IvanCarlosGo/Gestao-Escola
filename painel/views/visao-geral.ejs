@@ -1,0 +1,94 @@
+<%- include('partials/inicio', {
+  pageSubtitle: 'Todas as escolas da plataforma num só lugar.',
+  pageAction: '<a href="/escolas/novo" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Nova escola</a>'
+}) %>
+
+<div class="kpi-grid kpi-grid-4">
+  <div class="kpi-card">
+    <div class="kpi-icon blue"><i class="fa-solid fa-school"></i></div>
+    <div>
+      <div class="kpi-label">Escolas ativas</div>
+      <div class="kpi-value"><%= totais.escolasAtivas %><small class="kpi-of"> / <%= totais.escolas %></small></div>
+      <a href="/escolas" class="kpi-link">Ver escolas <i class="fa-solid fa-arrow-right"></i></a>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon green"><i class="fa-solid fa-users"></i></div>
+    <div>
+      <div class="kpi-label">Utilizadores ativos</div>
+      <div class="kpi-value"><%= totais.utilizadores %></div>
+      <a href="/utilizadores" class="kpi-link">Ver utilizadores <i class="fa-solid fa-arrow-right"></i></a>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon amber"><i class="fa-solid fa-mobile-screen"></i></div>
+    <div>
+      <div class="kpi-label">Contínuos</div>
+      <div class="kpi-value"><%= totais.continuos %></div>
+      <a href="/utilizadores?perfil=continuo" class="kpi-link">Ver contínuos <i class="fa-solid fa-arrow-right"></i></a>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon red"><i class="fa-regular fa-calendar-xmark"></i></div>
+    <div>
+      <div class="kpi-label">Faltas este mês</div>
+      <div class="kpi-value"><%= totais.faltasMes %></div>
+      <span class="kpi-note"><%= totais.professores %> professores ativos</span>
+    </div>
+  </div>
+</div>
+
+<% if (semAdmin.length) { %>
+  <div class="alert alert-warning">
+    <i class="fa-solid fa-triangle-exclamation"></i>
+    <span>
+      <% if (semAdmin.length === 1) { %>A escola <strong><%= semAdmin[0].nome %></strong> não tem nenhum administrador ativo.<% } else { %><strong><%= semAdmin.length %> escolas</strong> não têm nenhum administrador ativo.<% } %>
+      <a href="/utilizadores/novo?perfil=admin<%= semAdmin.length === 1 ? '&escola_id=' + semAdmin[0].id : '' %>">Criar administrador</a>
+    </span>
+  </div>
+<% } %>
+
+<div class="card">
+  <div class="card-header">
+    <h3>Escolas</h3>
+    <a href="/escolas" class="link">Gerir escolas <i class="fa-solid fa-arrow-right"></i></a>
+  </div>
+  <% if (escolas.length === 0) { %>
+    <div class="empty-state">
+      <i class="fa-solid fa-school"></i>
+      <p>Ainda não há escolas.</p>
+      <a href="/escolas/novo" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Criar a primeira escola</a>
+    </div>
+  <% } else { %>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Escola</th><th>Professores</th><th>Administradores</th><th>Secretarias</th><th>Contínuos</th><th>Faltas (mês)</th><th>Estado</th></tr>
+        </thead>
+        <tbody>
+          <% escolas.forEach(e => { %>
+            <tr>
+              <td>
+                <a href="/escolas/<%= e.id %>" class="person-cell">
+                  <%- include('partials/escola-logo', { e, tamanho: 'sm' }) %>
+                  <span>
+                    <span class="cell-name"><%= e.nome %></span>
+                    <% if (e.sigla) { %><span class="cell-sub"><%= e.sigla %></span><% } %>
+                  </span>
+                </a>
+              </td>
+              <td><%= e.professores %></td>
+              <td class="<%= e.ativo && !e.admins ? 'text-danger' : '' %>"><%= e.admins %></td>
+              <td><%= e.secretarias %></td>
+              <td><%= e.continuos %></td>
+              <td><%= e.faltas_mes %></td>
+              <td><% if (e.ativo) { %><span class="badge badge-success">Ativa</span><% } else { %><span class="badge badge-danger">Suspensa</span><% } %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<%- include('partials/fim') %>

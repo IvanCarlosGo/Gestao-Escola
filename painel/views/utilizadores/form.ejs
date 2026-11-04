@@ -1,0 +1,79 @@
+<%- include('../partials/inicio', { pageSubtitle: conta.id ? 'Altere os dados ou redefina a palavra-passe.' : 'Crie uma conta para uma escola.' }) %>
+
+<div class="form-card">
+  <form method="POST" action="<%= conta.id ? '/utilizadores/' + conta.id + '?_method=PUT' : '/utilizadores' %>" autocomplete="off">
+    <input type="hidden" name="voltar" value="<%= conta.voltar || '' %>">
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Escola <span class="req">*</span></label>
+        <select name="escola_id" required>
+          <option value="">Selecione a escola</option>
+          <% escolas.forEach(e => { %>
+            <option value="<%= e.id %>" <%= String(conta.escola_id) === String(e.id) ? 'selected' : '' %>><%= e.nome %><%= e.ativo ? '' : ' (suspensa)' %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="form-group full">
+        <label>Perfil <span class="req">*</span></label>
+        <div class="perfil-escolha">
+          <% [
+            ['admin', 'fa-user-tie', 'Gere professores, turmas, horários, faltas e as contas da escola.'],
+            ['secretaria', 'fa-user', 'Consulta tudo, edita e justifica faltas, gera relatórios.'],
+            ['continuo', 'fa-mobile-screen', 'Só a aplicação móvel: regista faltas de quem tem aula agora.']
+          ].forEach(([valor, icone, descricao]) => { %>
+            <label class="perfil-opcao">
+              <input type="radio" name="perfil" value="<%= valor %>" <%= conta.perfil === valor ? 'checked' : '' %> required>
+              <span class="perfil-cartao">
+                <i class="fa-solid <%= icone %>"></i>
+                <strong><%= perfis[valor] %></strong>
+                <small><%= descricao %></small>
+              </span>
+            </label>
+          <% }) %>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Nome <span class="req">*</span></label>
+        <input type="text" name="nome" value="<%= conta.nome || '' %>" maxlength="100" required>
+      </div>
+      <div class="form-group">
+        <label>Email <span class="req">*</span></label>
+        <input type="email" name="email" value="<%= conta.email || '' %>" maxlength="150" required>
+      </div>
+
+      <div class="form-group full">
+        <label>
+          <%= conta.id ? 'Nova palavra-passe' : 'Palavra-passe' %>
+          <%- conta.id ? '<span class="hint">(deixe em branco para manter a atual)</span>' : '<span class="req">*</span>' %>
+        </label>
+        <input type="text" name="palavra_passe" id="palavraPasse" minlength="8" autocomplete="new-password" <%= conta.id ? '' : 'required' %>>
+        <span class="hint">Mínimo 8 caracteres. <a href="#" id="gerarPass">Gerar uma</a></span>
+      </div>
+
+      <div class="form-group full">
+        <div class="checkbox-row">
+          <input type="checkbox" id="ativo" name="ativo" value="1" <%= conta.ativo ? 'checked' : '' %>>
+          <label for="ativo">Conta ativa (pode entrar)</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <a href="<%= conta.voltar === 'escola' && conta.escola_id ? '/escolas/' + conta.escola_id : '/utilizadores' %>" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  document.getElementById('gerarPass').addEventListener('click', (e) => {
+    e.preventDefault();
+    const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    const aleatorio = crypto.getRandomValues(new Uint32Array(12));
+    document.getElementById('palavraPasse').value = Array.from(aleatorio, (n) => letras[n % letras.length]).join('');
+  });
+</script>
+
+<%- include('../partials/fim') %>

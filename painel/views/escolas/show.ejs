@@ -1,0 +1,91 @@
+<%- include('../partials/inicio', { pageSubtitle: escola.sigla || '' }) %>
+
+<div class="card escola-header">
+  <%- include('../partials/escola-logo', { e: escola, tamanho: 'lg' }) %>
+  <div class="escola-header-info">
+    <h2><%= escola.nome %></h2>
+    <div class="profile-meta">
+      <% if (escola.ativo) { %><span class="badge badge-success">Ativa</span><% } else { %><span class="badge badge-danger">Suspensa — os utilizadores não conseguem entrar</span><% } %>
+      <span><i class="fa-regular fa-calendar"></i> Registada em <%= dataCurta(escola.criado_em) %></span>
+    </div>
+  </div>
+  <div class="profile-actions">
+    <a href="/escolas/<%= escola.id %>/editar" class="btn btn-outline btn-sm"><i class="fa-solid fa-pen"></i> Editar</a>
+    <form method="POST" action="/escolas/<%= escola.id %>/estado"
+          data-confirm="<%= escola.ativo ? 'Suspender ' + escola.nome + '? Nenhum utilizador desta escola consegue entrar enquanto estiver suspensa.' : 'Reativar ' + escola.nome + '?' %>">
+      <button type="submit" class="btn btn-sm <%= escola.ativo ? 'btn-danger-ghost' : 'btn-primary' %>">
+        <i class="fa-solid <%= escola.ativo ? 'fa-pause' : 'fa-play' %>"></i> <%= escola.ativo ? 'Suspender' : 'Reativar' %>
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="mini-stats mini-stats-6">
+  <div class="mini-stat"><span class="mini-stat-label">Professores ativos</span><span class="mini-stat-value"><%= escola.professores %></span></div>
+  <div class="mini-stat"><span class="mini-stat-label">Turmas</span><span class="mini-stat-value"><%= escola.turmas %></span></div>
+  <div class="mini-stat"><span class="mini-stat-label">Disciplinas</span><span class="mini-stat-value"><%= dados.disciplinas %></span></div>
+  <div class="mini-stat"><span class="mini-stat-label">Aulas no horário</span><span class="mini-stat-value"><%= dados.aulas %></span></div>
+  <div class="mini-stat"><span class="mini-stat-label">Faltas este mês</span><span class="mini-stat-value"><%= escola.faltas_mes %></span></div>
+  <div class="mini-stat"><span class="mini-stat-label">Faltas (total)</span><span class="mini-stat-value"><%= dados.faltas_total %></span></div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>Contas da escola</h3>
+    <div class="grid-header-actions">
+      <a href="/utilizadores/novo?escola_id=<%= escola.id %>&perfil=admin" class="btn btn-primary btn-sm"><i class="fa-solid fa-user-tie"></i> Administrador</a>
+      <a href="/utilizadores/novo?escola_id=<%= escola.id %>&perfil=secretaria" class="btn btn-outline btn-sm"><i class="fa-solid fa-user"></i> Secretaria</a>
+      <a href="/utilizadores/novo?escola_id=<%= escola.id %>&perfil=continuo" class="btn btn-outline btn-sm"><i class="fa-solid fa-mobile-screen"></i> Contínuo</a>
+    </div>
+  </div>
+
+  <% if (contas.length === 0) { %>
+    <div class="empty-state">
+      <i class="fa-solid fa-users"></i>
+      <p>Esta escola ainda não tem contas. Comece pelo administrador.</p>
+    </div>
+  <% } else { %>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Nome</th><th>Email</th><th>Perfil</th><th>Estado</th><th class="th-actions">Ações</th></tr></thead>
+        <tbody>
+          <% contas.forEach(c => { %>
+            <tr>
+              <td><span class="person-cell"><span class="avatar avatar-sm <%= avatarCor(c.id) %>"><%= iniciais(c.nome) %></span><span class="cell-name"><%= c.nome %></span></span></td>
+              <td class="cell-muted"><%= c.email %></td>
+              <td><span class="badge perfil-<%= c.perfil %>"><%= perfis[c.perfil] %></span></td>
+              <td><% if (c.ativo) { %><span class="badge badge-success">Ativa</span><% } else { %><span class="badge badge-muted">Desativada</span><% } %></td>
+              <td class="th-actions">
+                <div class="actions-cell" style="justify-content: center;">
+                  <a href="/utilizadores/<%= c.id %>/editar?voltar=escola" class="btn btn-outline btn-sm btn-icon" title="Editar / redefinir palavra-passe"><i class="fa-solid fa-pen"></i></a>
+                  <form method="POST" action="/utilizadores/<%= c.id %>/estado">
+                    <input type="hidden" name="voltar" value="escola">
+                    <button type="submit" class="btn btn-outline btn-sm btn-icon" title="<%= c.ativo ? 'Desativar' : 'Ativar' %>"><i class="fa-solid <%= c.ativo ? 'fa-user-slash' : 'fa-user-check' %>"></i></button>
+                  </form>
+                  <form method="POST" action="/utilizadores/<%= c.id %>?_method=DELETE" data-confirm="Eliminar a conta de <%= c.nome %>?">
+                    <input type="hidden" name="voltar" value="escola">
+                    <button type="submit" class="btn btn-danger-ghost btn-sm btn-icon" title="Eliminar"><i class="fa-regular fa-trash-can"></i></button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<div class="card zona-perigo">
+  <div class="settings-section">
+    <div>
+      <h4>Eliminar escola</h4>
+      <p>Só é possível em escolas sem dados. Com professores, turmas ou contas, use <strong>Suspender</strong>.</p>
+    </div>
+    <form method="POST" action="/escolas/<%= escola.id %>?_method=DELETE" data-confirm="Eliminar definitivamente <%= escola.nome %>?">
+      <button type="submit" class="btn btn-danger-ghost btn-sm"><i class="fa-regular fa-trash-can"></i> Eliminar escola</button>
+    </form>
+  </div>
+</div>
+
+<%- include('../partials/fim') %>

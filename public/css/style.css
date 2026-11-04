@@ -1786,3 +1786,100 @@ a.user-avatar:hover { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35); }
   font-size: 30px;
   margin-bottom: 12px;
 }
+
+/* =========================================================
+   Painel da plataforma (porta 8080)
+   ========================================================= */
+
+.painel-body { --sidebar-bg: #111827; --sidebar-text: #c3c8d2; }
+.painel-body .nav-item.active { background: rgba(255, 255, 255, 0.12); }
+.painel-login { background: linear-gradient(160deg, #1f2937 0%, #0b1220 100%); }
+
+.painel-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #111827;
+  color: #fff;
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.kpi-grid-4 { grid-template-columns: repeat(4, 1fr); }
+.kpi-icon.amber { background: var(--color-warning-bg); color: var(--color-warning); }
+.kpi-of { font-size: 14px; color: var(--color-text-muted); font-weight: 500; }
+.kpi-note { font-size: 12.5px; color: var(--color-text-muted); }
+
+.alert-warning { background: var(--color-warning-bg); color: var(--color-warning); }
+.alert-warning a { color: inherit; font-weight: 600; text-decoration: underline; margin-left: 6px; }
+
+.cell-sub { display: block; font-size: 11.5px; color: var(--color-text-muted); }
+.link-plain:hover { color: var(--color-primary); text-decoration: underline; }
+
+.escola-logo { object-fit: contain; border-radius: 50%; background: #fff; border: 1px solid var(--color-border); flex-shrink: 0; }
+.escola-logo-sm { width: 30px; height: 30px; }
+.escola-logo-lg { width: 60px; height: 60px; }
+
+.escola-header { display: flex; align-items: center; gap: 18px; margin-bottom: 16px; flex-wrap: wrap; }
+.escola-header-info h2 { font-size: 18px; font-weight: 600; }
+.escola-header .profile-actions form { margin: 0; }
+
+.mini-stats-6 { grid-template-columns: repeat(6, 1fr); }
+
+.logo-upload { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.logo-upload > div { display: flex; flex-direction: column; gap: 6px; }
+.logo-preview {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 1px dashed #c9cfd8;
+  background: var(--color-surface-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: var(--color-text-soft);
+  font-size: 22px;
+}
+.logo-preview img { width: 100%; height: 100%; object-fit: contain; }
+.logo-remove { font-size: 12.5px; display: flex; align-items: center; gap: 6px; }
+
+.form-section { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--color-border); display: flex; flex-direction: column; gap: 14px; }
+.form-section .checkbox-row { cursor: pointer; font-size: 13px; }
+
+.perfil-escolha { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.perfil-opcao input { position: absolute; opacity: 0; pointer-events: none; }
+.perfil-cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 100%;
+  border: 1px solid #d5dae3;
+  border-radius: var(--radius-md);
+  padding: 12px;
+  cursor: pointer;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.perfil-cartao i { color: var(--color-primary); font-size: 16px; }
+.perfil-cartao strong { font-size: 13px; }
+.perfil-cartao small { font-size: 11.5px; color: var(--color-text-muted); line-height: 1.4; }
+.perfil-opcao input:checked + .perfil-cartao { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.12); background: var(--color-primary-light); }
+.perfil-opcao input:focus-visible + .perfil-cartao { outline: 2px solid var(--color-primary); }
+
+.badge.perfil-admin { background: var(--color-primary-light); color: var(--color-primary); }
+.badge.perfil-secretaria { background: #eef2ff; color: #4338ca; }
+.badge.perfil-continuo { background: var(--color-warning-bg); color: var(--color-warning); }
+
+.zona-perigo { margin-top: 18px; border-color: #f5c2c2; }
+
+@media (max-width: 1180px) {
+  .kpi-grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .mini-stats-6 { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 860px) {
+  .kpi-grid-4, .perfil-escolha { grid-template-columns: 1fr; }
+  .mini-stats-6 { grid-template-columns: repeat(2, 1fr); }
+  .painel-tag { display: none; }
+}

@@ -1,0 +1,117 @@
+<%- include('../partials/inicio', { pageSubtitle: escola.id ? 'Dados e logótipo da escola.' : 'Registe a escola e, se quiser, o seu primeiro administrador.' }) %>
+
+<div class="form-card">
+  <form method="POST" action="<%= escola.id ? '/escolas/' + escola.id + '?_method=PUT' : '/escolas' %>" id="escolaForm">
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Nome da escola <span class="req">*</span></label>
+        <input type="text" name="nome" value="<%= escola.nome || '' %>" maxlength="150" required placeholder="Ex: Escola Secundária de Achada Grande">
+      </div>
+      <div class="form-group">
+        <label>Sigla</label>
+        <input type="text" name="sigla" value="<%= escola.sigla || '' %>" maxlength="30" placeholder="Ex: E.S.A.G">
+      </div>
+      <div class="form-group">
+        <label>&nbsp;</label>
+        <div class="checkbox-row">
+          <input type="checkbox" id="ativo" name="ativo" value="1" <%= escola.ativo ? 'checked' : '' %>>
+          <label for="ativo">Escola ativa (os utilizadores podem entrar)</label>
+        </div>
+      </div>
+
+      <div class="form-group full">
+        <label>Logótipo <span class="hint">(PNG, JPG ou WEBP, até 1 MB)</span></label>
+        <div class="logo-upload">
+          <span class="logo-preview" id="logoPreview">
+            <% if (escola.logo) { %><img src="<%= escola.logo %>" alt=""><% } else { %><i class="fa-regular fa-image"></i><% } %>
+          </span>
+          <div>
+            <input type="file" id="logoFicheiro" accept="image/png,image/jpeg,image/webp">
+            <input type="hidden" name="logo_dados" id="logoDados">
+            <% if (escola.id && escola.logo) { %>
+              <label class="logo-remove"><input type="checkbox" name="remover_logo" value="1"> Remover logótipo</label>
+            <% } %>
+            <span class="hint" id="logoErro"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <% if (!escola.id) { %>
+      <div class="form-section">
+        <label class="checkbox-row">
+          <input type="checkbox" name="criar_admin" value="1" id="criarAdmin" <%= adminInicial.criar !== false ? 'checked' : '' %>>
+          <span><strong>Criar já o administrador da escola</strong> — quem vai gerir professores, turmas e horários desta escola</span>
+        </label>
+        <div class="form-grid" id="adminCampos">
+          <div class="form-group">
+            <label>Nome do administrador <span class="req">*</span></label>
+            <input type="text" name="admin_nome" value="<%= adminInicial.nome || '' %>" maxlength="100">
+          </div>
+          <div class="form-group">
+            <label>Email <span class="req">*</span></label>
+            <input type="email" name="admin_email" value="<%= adminInicial.email || '' %>" maxlength="150" autocomplete="off">
+          </div>
+          <div class="form-group full">
+            <label>Palavra-passe inicial <span class="req">*</span></label>
+            <input type="text" name="admin_palavra_passe" minlength="8" autocomplete="new-password" id="adminPass">
+            <span class="hint">Mínimo 8 caracteres. Entregue-a ao administrador e peça-lhe para a alterar em Definições. <a href="#" id="gerarPass">Gerar uma</a></span>
+          </div>
+        </div>
+      </div>
+    <% } %>
+
+    <div class="form-actions">
+      <a href="<%= escola.id ? '/escolas/' + escola.id : '/escolas' %>" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  (() => {
+    // Logótipo: lido no browser e enviado como data URL (o servidor valida tipo, tamanho e conteúdo)
+    const ficheiro = document.getElementById('logoFicheiro');
+    const dados = document.getElementById('logoDados');
+    const preview = document.getElementById('logoPreview');
+    const erro = document.getElementById('logoErro');
+    ficheiro.addEventListener('change', () => {
+      const f = ficheiro.files[0];
+      erro.textContent = '';
+      dados.value = '';
+      if (!f) return;
+      if (!['image/png', 'image/jpeg', 'image/webp'].includes(f.type)) { erro.textContent = 'Use uma imagem PNG, JPG ou WEBP.'; ficheiro.value = ''; return; }
+      if (f.size > 1024 * 1024) { erro.textContent = 'A imagem tem mais de 1 MB.'; ficheiro.value = ''; return; }
+      const leitor = new FileReader();
+      leitor.onload = () => {
+        dados.value = leitor.result;
+        preview.innerHTML = '';
+        const img = document.createElement('img');
+        img.src = leitor.result;
+        img.alt = '';
+        preview.appendChild(img);
+      };
+      leitor.readAsDataURL(f);
+    });
+
+    // Primeiro administrador: campos obrigatórios só quando a opção está ligada
+    const criar = document.getElementById('criarAdmin');
+    if (criar) {
+      const campos = document.getElementById('adminCampos');
+      const atualizar = () => {
+        campos.hidden = !criar.checked;
+        campos.querySelectorAll('input').forEach((i) => { i.required = criar.checked; });
+      };
+      criar.addEventListener('change', atualizar);
+      atualizar();
+      document.getElementById('gerarPass').addEventListener('click', (e) => {
+        e.preventDefault();
+        const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+        const aleatorio = crypto.getRandomValues(new Uint32Array(12));
+        document.getElementById('adminPass').value = Array.from(aleatorio, (n) => letras[n % letras.length]).join('');
+      });
+    }
+  })();
+</script>
+
+<%- include('../partials/fim') %>

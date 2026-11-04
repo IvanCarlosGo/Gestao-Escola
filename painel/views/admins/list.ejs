@@ -1,0 +1,49 @@
+<%- include('../partials/inicio', { pageSubtitle: 'Quem tem acesso total a este painel.' }) %>
+
+<div class="panel-grid">
+  <div class="card">
+    <div class="card-header"><h3>Administradores da plataforma</h3></div>
+    <% admins.forEach(a => { %>
+      <div class="list-row">
+        <span class="avatar avatar-sm <%= avatarCor(a.id) %>"><%= iniciais(a.nome) %></span>
+        <span class="list-row-info">
+          <strong><%= a.nome %> <% if (a.id === admin.id) { %><span class="badge badge-muted">Você</span><% } %></strong>
+          <span><%= a.email %> · desde <%= dataCurta(a.criado_em) %></span>
+        </span>
+        <% if (a.id !== admin.id) { %>
+          <form method="POST" action="/admins/<%= a.id %>?_method=DELETE" data-confirm="Retirar o acesso ao painel a <%= a.nome %>?">
+            <button type="submit" class="btn btn-danger-ghost btn-sm btn-icon" title="Remover"><i class="fa-regular fa-trash-can"></i></button>
+          </form>
+        <% } %>
+      </div>
+    <% }) %>
+
+    <form method="POST" action="/admins" class="password-form" autocomplete="off">
+      <h4>Adicionar administrador da plataforma</h4>
+      <div class="form-grid">
+        <div class="form-group"><label>Nome</label><input type="text" name="nome" maxlength="100" required></div>
+        <div class="form-group"><label>Email</label><input type="email" name="email" maxlength="150" required></div>
+        <div class="form-group full"><label>Palavra-passe inicial</label><input type="text" name="palavra_passe" minlength="8" autocomplete="new-password" required></div>
+      </div>
+      <div class="info-box"><i class="fa-solid fa-triangle-exclamation"></i><span>Um administrador da plataforma tem acesso total a todas as escolas. Dê este acesso só a quem precisa.</span></div>
+      <div class="form-actions"><button type="submit" class="btn btn-primary"><i class="fa-solid fa-user-shield"></i> Adicionar</button></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>A minha conta</h3></div>
+    <div class="list-row">
+      <span class="avatar avatar-md <%= avatarCor(admin.id) %>"><%= iniciais(admin.nome) %></span>
+      <span class="list-row-info"><strong><%= admin.nome %></strong><span><%= admin.email %></span></span>
+    </div>
+    <form method="POST" action="/admins/palavra-passe" class="password-form">
+      <h4>Alterar palavra-passe</h4>
+      <div class="form-group"><label>Palavra-passe atual</label><input type="password" name="atual" autocomplete="current-password" required></div>
+      <div class="form-group"><label>Nova palavra-passe</label><input type="password" name="nova" minlength="8" autocomplete="new-password" required></div>
+      <div class="form-group"><label>Confirmar nova palavra-passe</label><input type="password" name="confirmar" minlength="8" autocomplete="new-password" required></div>
+      <div class="form-actions"><button type="submit" class="btn btn-primary"><i class="fa-solid fa-key"></i> Alterar</button></div>
+    </form>
+  </div>
+</div>
+
+<%- include('../partials/fim') %>

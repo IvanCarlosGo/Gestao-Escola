@@ -5,3 +5,6 @@ npm-debug.log
 .vscode/
 db-data/
 backups/
+
+# Logótipos carregados pelo painel
+public/img/escolas/

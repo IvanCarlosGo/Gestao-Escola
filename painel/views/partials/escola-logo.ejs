@@ -1,0 +1,6 @@
+<%# Logótipo da escola, ou as iniciais quando não tem. Parâmetros: e (escola), tamanho ('sm' | 'lg') %>
+<% if (e.logo) { %>
+  <img src="<%= e.logo %>" alt="" class="escola-logo escola-logo-<%= tamanho %>">
+<% } else { %>
+  <span class="avatar avatar-<%= tamanho === 'lg' ? 'lg' : 'sm' %> <%= avatarCor(e.id) %>"><%= iniciais(e.sigla || e.nome) %></span>
+<% } %>

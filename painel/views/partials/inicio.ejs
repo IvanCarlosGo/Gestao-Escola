@@ -1,0 +1,75 @@
+<%# Início comum das páginas do painel: <head>, barra lateral e cabeçalho. Fecha em partials/fim.ejs %>
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <%- include('head') %>
+</head>
+<body class="painel-body">
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon"><i class="fa-solid fa-shield-halved brand-fallback"></i></div>
+        <div class="brand-text">
+          <strong>Gestão Escolar</strong>
+          <span>Painel da Plataforma</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="/" class="nav-item <%= activePage === 'visao-geral' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span><span>Visão geral</span>
+        </a>
+        <a href="/escolas" class="nav-item <%= activePage === 'escolas' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="fa-solid fa-school"></i></span><span>Escolas</span>
+        </a>
+        <a href="/utilizadores" class="nav-item <%= activePage === 'utilizadores' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="fa-solid fa-users"></i></span><span>Utilizadores</span>
+        </a>
+        <a href="/admins" class="nav-item <%= activePage === 'admins' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="fa-solid fa-user-shield"></i></span><span>Administradores</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-chip">
+          <a href="/admins" class="user-avatar" title="A minha conta"><%= iniciais(admin.nome) %></a>
+          <span class="user-info">
+            <strong><%= admin.nome %></strong>
+            <span>Plataforma</span>
+          </span>
+          <form method="POST" action="/logout">
+            <button type="submit" class="user-logout" title="Terminar sessão" aria-label="Terminar sessão">
+              <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="main-content">
+      <header class="topbar">
+        <button class="menu-toggle" id="menuToggle" aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
+        <span class="painel-tag"><i class="fa-solid fa-shield-halved"></i> Plataforma · acesso total</span>
+        <div class="topbar-actions">
+          <div class="topbar-date"><span id="dataAtual"></span></div>
+        </div>
+      </header>
+
+      <div class="page-header">
+        <div>
+          <h1><%= pageTitle %></h1>
+          <% if (typeof pageSubtitle !== 'undefined' && pageSubtitle) { %><p><%= pageSubtitle %></p><% } %>
+        </div>
+        <% if (typeof pageAction !== 'undefined' && pageAction) { %>
+          <div class="page-header-actions"><%- pageAction %></div>
+        <% } %>
+      </div>
+
+      <main class="content-body">
+        <% if (typeof success !== 'undefined' && success) { %>
+          <div class="alert alert-success"><i class="fa-solid fa-circle-check"></i> <%= success %></div>
+        <% } %>
+        <% if (typeof error !== 'undefined' && error) { %>
+          <div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i> <%= error %></div>
+        <% } %>

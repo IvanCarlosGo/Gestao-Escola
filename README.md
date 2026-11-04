@@ -14,7 +14,9 @@ Aplicação web para gerir professores, turmas, disciplinas, horários e faltas 
 - **Horários** — grelha semanal clicável por turma (e por professor no perfil), com deteção de conflitos
 - **Histórico de Faltas** — lista individual de faltas/atrasos com filtros, justificação com um clique
 - **Relatórios** — estatísticas agregadas e exportação em PDF ou CSV, com filtros
-- **Login e perfis** — Administrador (acesso total e gestão de utilizadores) e Secretaria (consulta, edita e justifica faltas)
+- **Várias escolas** — cada escola só vê os seus professores, turmas, horários, faltas e contas
+- **Login e perfis** — Administrador da escola, Secretaria (consulta, edita e justifica faltas) e Contínuo (só a aplicação móvel)
+- **Painel da plataforma** (porta 8080) — o dono do projeto cria escolas, administradores, secretarias e contínuos, suspende escolas e acompanha os números de todas
 - Interface responsiva (desktop e telemóvel)
 
 ## Estrutura
@@ -41,8 +43,9 @@ Requer [Docker Desktop](https://www.docker.com/products/docker-desktop/) instala
 docker compose up --build
 ```
 
-- Aplicação: http://localhost:3000
-- Adminer (gestor visual da BD): http://localhost:8080
+- Aplicação das escolas: http://localhost:3000
+- Painel da plataforma: http://localhost:8080
+- Adminer (gestor visual da BD, só para emergências): http://localhost:8081
   - Sistema: MySQL, Servidor: `db`, Utilizador: `escola_user`, Password: `escola_pass`, Base de dados: `gestao_escolar`
 
 ### Primeiro acesso
@@ -55,6 +58,12 @@ docker logs escola_app | grep -A3 "Administrador criado"
 ```
 
 Depois de entrar, altere a palavra-passe em **Definições** e crie as restantes contas em **Utilizadores**.
+
+O **painel da plataforma** tem a sua própria conta, criada também no primeiro arranque (`PAINEL_EMAIL`, por omissão `plataforma@escola.cv`):
+
+```bash
+docker logs escola_painel | grep -A3 "conta criada"
+```
 
 Os dados ficam persistidos no volume `db-data`. Para recomeçar do zero:
 
@@ -89,6 +98,8 @@ Ajusta o `.env` se necessário (por defeito `DB_HOST=db`, muda para `localhost` 
 | ADMIN_EMAIL | Email do administrador criado no primeiro arranque | admin@escola.cv |
 | ADMIN_PASSWORD | Palavra-passe desse administrador | — (gerada e mostrada nos logs) |
 | COOKIE_SECURE | `1` quando a aplicação estiver em HTTPS | 0 |
+| PAINEL_EMAIL | Email da conta do painel da plataforma | plataforma@escola.cv |
+| PAINEL_PASSWORD | Palavra-passe dessa conta | — (gerada e mostrada nos logs do `escola_painel`) |
 
 > Nota: a porta do MySQL exposta ao Windows é **3307** (`docker-compose.yml`), porque a 3306 pode já estar ocupada por outra instalação local de MySQL. Isto não afeta a app, que liga sempre internamente à porta 3306 dentro da rede Docker.
 

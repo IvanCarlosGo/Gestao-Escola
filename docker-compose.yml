@@ -44,6 +44,34 @@ services:
       - ./:/usr/src/app
       - /usr/src/app/node_modules
 
+  # Painel da plataforma (dono do projeto): escolas, administradores, secretarias e contínuos
+  painel:
+    build: .
+    container_name: escola_painel
+    restart: unless-stopped
+    command: ["node", "painel/server.js"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PAINEL_PORT: 8080
+      TZ: ${TZ:-Atlantic/Cape_Verde}
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      PAINEL_EMAIL: ${PAINEL_EMAIL:-plataforma@escola.cv}
+      PAINEL_PASSWORD: ${PAINEL_PASSWORD:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-0}
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: ${DB_USER:-escola_user}
+      DB_PASSWORD: ${DB_PASSWORD:-escola_pass}
+      DB_NAME: ${DB_NAME:-gestao_escolar}
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./:/usr/src/app
+      - /usr/src/app/node_modules
+
+  # Gestor genérico da base de dados (só para emergências)
   adminer:
     image: adminer
     container_name: escola_adminer
@@ -51,7 +79,7 @@ services:
     depends_on:
       - db
     ports:
-      - "8080:8080"
+      - "8081:8080"
 
 volumes:
   db-data:

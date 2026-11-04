@@ -1,0 +1,51 @@
+<%- include('../partials/inicio', {
+  pageSubtitle: 'Escolas que usam a plataforma.',
+  pageAction: '<a href="/escolas/novo" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Nova escola</a>'
+}) %>
+
+<div class="table-wrap">
+  <% if (escolas.length === 0) { %>
+    <div class="empty-state">
+      <i class="fa-solid fa-school"></i>
+      <p>Ainda não há escolas.</p>
+      <a href="/escolas/novo" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Nova escola</a>
+    </div>
+  <% } else { %>
+    <table>
+      <thead>
+        <tr><th>Escola</th><th>Professores</th><th>Turmas</th><th>Contas</th><th>Última falta registada</th><th>Estado</th><th class="th-actions">Ações</th></tr>
+      </thead>
+      <tbody>
+        <% escolas.forEach(e => { %>
+          <tr>
+            <td>
+              <a href="/escolas/<%= e.id %>" class="person-cell">
+                <%- include('../partials/escola-logo', { e, tamanho: 'sm' }) %>
+                <span>
+                  <span class="cell-name"><%= e.nome %></span>
+                  <% if (e.sigla) { %><span class="cell-sub"><%= e.sigla %></span><% } %>
+                </span>
+              </a>
+            </td>
+            <td><%= e.professores %></td>
+            <td><%= e.turmas %></td>
+            <td class="cell-muted">
+              <%= e.admins %> admin · <%= e.secretarias %> secr. · <%= e.continuos %> cont.
+              <% if (e.ativo && !e.admins) { %><span class="badge badge-danger">sem administrador</span><% } %>
+            </td>
+            <td class="cell-muted"><%= e.ultima_falta ? dataCurta(e.ultima_falta) : '—' %></td>
+            <td><% if (e.ativo) { %><span class="badge badge-success">Ativa</span><% } else { %><span class="badge badge-danger">Suspensa</span><% } %></td>
+            <td class="th-actions">
+              <div class="actions-cell" style="justify-content: center;">
+                <a href="/escolas/<%= e.id %>" class="btn btn-outline btn-sm btn-icon" title="Ver"><i class="fa-regular fa-eye"></i></a>
+                <a href="/escolas/<%= e.id %>/editar" class="btn btn-outline btn-sm btn-icon" title="Editar"><i class="fa-solid fa-pen"></i></a>
+              </div>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../partials/fim') %>

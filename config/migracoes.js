@@ -28,7 +28,20 @@ async function unicoPorEscola(tabela, indiceAntigo, coluna) {
   if (await indiceExiste(tabela, indiceAntigo)) await pool.query(`ALTER TABLE ${tabela} DROP INDEX ${indiceAntigo}`);
 }
 
+// O site e o painel arrancam ao mesmo tempo: um bloqueio no MySQL garante que só um migra de cada vez
 async function migrar() {
+  const ligacao = await pool.getConnection();
+  try {
+    const [[{ ok }]] = await ligacao.query("SELECT GET_LOCK('gestao_escolar_migracoes', 60) AS ok");
+    if (!ok) throw new Error('Não foi possível obter o bloqueio das migrações.');
+    await aplicarMigracoes();
+  } finally {
+    await ligacao.query("SELECT RELEASE_LOCK('gestao_escolar_migracoes')").catch(() => {});
+    ligacao.release();
+  }
+}
+
+async function aplicarMigracoes() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS escolas (
       id INT AUTO_INCREMENT PRIMARY KEY,
