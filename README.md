@@ -10,7 +10,7 @@ Aplicação web para gerir professores, turmas, disciplinas, horários e faltas 
 - **Professores** — criar, editar, eliminar, pesquisar; cada professor tem disciplina(s) e turma(s) atribuídas
 - **Perfil do professor** — separadores: Resumo, Horário Semanal (grelha), Faltas, Disciplinas, Turmas
 - **Turmas** e **Disciplinas** — gestão completa (CRUD) independente
-- **Registo de faltas** — feito pela aplicação móvel; esta aplicação web consulta, gere e exporta os registos
+- **Registo de faltas** — feito pela aplicação móvel através da [API](docs/API.md); esta aplicação web consulta, gere e exporta os registos
 - **Horários** — grelha semanal clicável por turma (e por professor no perfil), com deteção de conflitos
 - **Histórico de Faltas** — lista individual de faltas/atrasos com filtros, justificação com um clique
 - **Relatórios** — estatísticas agregadas e exportação em PDF ou CSV, com filtros

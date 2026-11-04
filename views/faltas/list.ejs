@@ -86,7 +86,7 @@
                         </div>
                       </a>
                     </td>
-                    <td class="cell-muted"><%= new Date(f.data_falta).toLocaleDateString('pt-PT') %></td>
+                    <td class="cell-muted"><%= dataNumerica(f.data_falta) %></td>
                     <td class="cell-muted">
                       <% if (f.hora_inicio) { %><%= f.hora_inicio.slice(0,5) %> - <%= f.hora_fim ? f.hora_fim.slice(0,5) : '' %><% } else { %>—<% } %>
                     </td>

@@ -61,7 +61,13 @@ function dataCurta(valor) {
   return `${dia} ${MESES_CURTOS[mes - 1]} ${ano}`;
 }
 
+// "2025-09-22" -> "22/09/2025" (lê o texto diretamente; new Date('AAAA-MM-DD') seria UTC e mudaria o dia)
+function dataNumerica(valor) {
+  const [ano, mes, dia] = String(valor || '').slice(0, 10).split('-');
+  return ano && mes && dia ? `${dia}/${mes}/${ano}` : '—';
+}
+
 module.exports = {
-  iniciais, avatarCor, MOTIVOS_FALTA, diasUteisMes, dataCurta,
+  iniciais, avatarCor, MOTIVOS_FALTA, diasUteisMes, dataCurta, dataNumerica,
   ANOS_ESCOLARES, LETRAS_TURMA, NOME_TURMA_VALIDO, partesTurma, nomeTurma
 };

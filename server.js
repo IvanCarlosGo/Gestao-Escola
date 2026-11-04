@@ -5,7 +5,7 @@ const path = require('path');
 const methodOverride = require('method-override');
 
 const { waitForDatabase } = require('./config/db');
-const { iniciais, avatarCor, MOTIVOS_FALTA, dataCurta } = require('./config/ui');
+const { iniciais, avatarCor, MOTIVOS_FALTA, dataCurta, dataNumerica } = require('./config/ui');
 const { carregarUtilizador, exigirLogin, verificarPermissao, prepararUtilizadores } = require('./config/auth');
 
 const indexRoutes = require('./routes/index');
@@ -18,6 +18,7 @@ const relatoriosRoutes = require('./routes/relatorios');
 const configuracoesRoutes = require('./routes/configuracoes');
 const authRoutes = require('./routes/auth');
 const utilizadoresRoutes = require('./routes/utilizadores');
+const { router: apiRoutes, errosApi } = require('./routes/api');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,6 +26,9 @@ const PORT = process.env.PORT || 3000;
 // View engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+
+// API da aplicação móvel: JSON + autenticação por token (independente da sessão por cookie)
+app.use('/api', express.json({ limit: '100kb' }), apiRoutes, errosApi);
 
 // Middlewares
 app.use(express.urlencoded({ extended: true }));
@@ -40,6 +44,7 @@ app.use((req, res, next) => {
   res.locals.avatarCor = avatarCor;
   res.locals.motivosFalta = MOTIVOS_FALTA;
   res.locals.dataCurta = dataCurta;
+  res.locals.dataNumerica = dataNumerica;
   next();
 });
 

@@ -102,6 +102,27 @@ function exigirLogin(req, res, next) {
   return res.status(401).send('Sessão expirada. Inicie sessão novamente.');
 }
 
+// ---------- Tokens da API (aplicação móvel) ----------
+// Formato "<id>.<expira>.<assinatura>"; a assinatura usa o prefixo "api:" para não servir como cookie e vice-versa.
+
+const DURACAO_TOKEN_MS = 30 * 24 * 60 * 60 * 1000; // 30 dias
+
+function criarTokenApi(utilizadorId) {
+  const expira = Date.now() + DURACAO_TOKEN_MS;
+  const valor = `${utilizadorId}.${expira}`;
+  return { token: `${valor}.${assinatura(`api:${valor}`)}`, expira: new Date(expira) };
+}
+
+function idDoTokenApi(token) {
+  const [id, expira, sig] = String(token || '').split('.');
+  if (!id || !expira || !sig) return null;
+  const esperado = Buffer.from(assinatura(`api:${id}.${expira}`));
+  const recebido = Buffer.from(sig);
+  if (esperado.length !== recebido.length || !crypto.timingSafeEqual(esperado, recebido)) return null;
+  if (Number(expira) < Date.now()) return null;
+  return Number(id);
+}
+
 // ---------- Permissões ----------
 
 // O que a Secretaria pode alterar: editar/justificar faltas e a própria palavra-passe.
@@ -194,6 +215,8 @@ module.exports = {
   validarNovaPalavraPasse,
   criarSessao,
   terminarSessao,
+  criarTokenApi,
+  idDoTokenApi,
   carregarUtilizador,
   exigirLogin,
   verificarPermissao,

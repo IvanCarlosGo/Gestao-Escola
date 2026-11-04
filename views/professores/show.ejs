@@ -92,7 +92,7 @@
                   <tbody>
                     <% faltas.slice(0, 5).forEach(f => { %>
                       <tr>
-                        <td><%= new Date(f.data_falta + 'T00:00:00').toLocaleDateString('pt-PT') %></td>
+                        <td><%= dataNumerica(f.data_falta) %></td>
                         <td><%= f.motivo || (f.tipo === 'atraso' ? 'Atraso' : 'Falta') %></td>
                         <td>
                           <% if (f.justificada) { %>
@@ -136,7 +136,7 @@
                     <tbody>
                       <% faltas.forEach(f => { %>
                         <tr>
-                          <td><%= new Date(f.data_falta + 'T00:00:00').toLocaleDateString('pt-PT') %></td>
+                          <td><%= dataNumerica(f.data_falta) %></td>
                           <td class="cell-muted">
                             <% if (f.hora_inicio) { %><%= f.hora_inicio.slice(0,5) %> - <%= f.hora_fim ? f.hora_fim.slice(0,5) : '' %><% } else { %>—<% } %>
                           </td>

@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/db');
 const { diasUteisMes } = require('../config/ui');
-const { DIA_SEMANA_JS, labelDia } = require('../config/horarioSlots');
+const { labelDia } = require('../config/horarioSlots');
+const { aulasAgora, calcularProgresso } = require('../config/aulas');
 
 const MESES_CURTOS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
@@ -78,58 +79,19 @@ router.get('/', async (req, res, next) => {
 
     // Professores com aula a decorrer neste momento, segundo o horário
     const agora = new Date();
-    const hoje = agora.toLocaleDateString('sv-SE');
-    const diaAtualKey = DIA_SEMANA_JS[agora.getDay()] || null;
-    const horaAtual = agora.toTimeString().slice(0, 8);
-
-    let aulasAgora = [];
-    let proximaAula = null;
-
-    if (diaAtualKey) {
-      [aulasAgora] = await pool.query(
-        `SELECT h.hora_inicio, h.hora_fim, h.sala,
-          p.id AS professor_id, p.nome AS professor_nome,
-          d.nome AS disciplina_nome, t.nome AS turma_nome,
-          EXISTS(SELECT 1 FROM faltas f WHERE f.professor_id = p.id AND f.data_falta = ?) AS tem_falta
-         FROM horarios h
-         JOIN professores p ON p.id = h.professor_id AND p.ativo = 1
-         JOIN disciplinas d ON d.id = h.disciplina_id
-         JOIN turmas t ON t.id = h.turma_id
-         WHERE h.dia_semana = ? AND h.hora_inicio <= ? AND h.hora_fim > ?
-         ORDER BY p.nome ASC`,
-        [hoje, diaAtualKey, horaAtual, horaAtual]
-      );
-
-      if (aulasAgora.length === 0) {
-        [[proximaAula]] = await pool.query(
-          `SELECT MIN(h.hora_inicio) AS hora_inicio
-           FROM horarios h JOIN professores p ON p.id = h.professor_id AND p.ativo = 1
-           WHERE h.dia_semana = ? AND h.hora_inicio > ?`,
-          [diaAtualKey, horaAtual]
-        );
-        if (!proximaAula || !proximaAula.hora_inicio) proximaAula = null;
-      }
-    }
+    const atual = await aulasAgora(agora);
+    const diaAtualKey = atual.diaKey;
+    const horaAtual = atual.hora;
+    let { aulas, proximaAula } = atual;
 
     // Pré-visualização com dados fictícios (/?demo=1): nada é gravado na base de dados
     const demo = req.query.demo === '1';
     if (demo) {
-      aulasAgora = await aulasDemo(agora);
+      aulas = await aulasDemo(agora);
       proximaAula = null;
     }
 
-    // Progresso de cada aula: minutos que faltam e % já decorrida
-    const minutos = (hora) => {
-      const [h, m] = String(hora).split(':').map(Number);
-      return h * 60 + m;
-    };
-    const agoraMin = agora.getHours() * 60 + agora.getMinutes();
-    aulasAgora.forEach((a) => {
-      const inicio = minutos(a.hora_inicio);
-      const fim = minutos(a.hora_fim);
-      a.minutosRestantes = Math.max(0, fim - agoraMin);
-      a.progresso = Math.min(100, Math.max(0, Math.round(((agoraMin - inicio) / (fim - inicio)) * 100)));
-    });
+    calcularProgresso(aulas, agora);
 
     res.render('dashboard', {
       pageTitle: 'Dashboard',
@@ -137,7 +99,7 @@ router.get('/', async (req, res, next) => {
       stats: { totalProfessores, totalFaltasMes, taxaAssiduidade },
       faltasRecentes,
       faltasPorMes,
-      aulasAgora,
+      aulasAgora: aulas,
       proximaAula,
       momentoAtual: diaAtualKey || demo
         ? `${labelDia(diaAtualKey || 'segunda')}, ${horaAtual.slice(0, 5)}`
