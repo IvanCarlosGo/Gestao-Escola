@@ -10,7 +10,10 @@
     <div class="main-content">
       <%- include('../partials/topbar', {
         pageSubtitle: 'Lista de todos os professores da escola.',
-        pageAction: ehAdmin ? '<a href="/professores/novo" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Novo Professor</a>' : ''
+        pageAction: ehAdmin
+          ? '<a href="/importar" class="btn btn-outline"><i class="fa-solid fa-file-import"></i> Importar de Excel</a>'
+            + '<a href="/professores/novo" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Novo Professor</a>'
+          : ''
       }) %>
 
       <main class="content-body">

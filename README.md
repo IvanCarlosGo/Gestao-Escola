@@ -14,6 +14,7 @@ Aplicação web para gerir professores, turmas, disciplinas, horários e faltas 
 - **Horários** — grelha semanal clicável por turma (e por professor no perfil), com deteção de conflitos
 - **Histórico de Faltas** — lista individual de faltas/atrasos com filtros, justificação com um clique
 - **Relatórios** — estatísticas agregadas e exportação em PDF ou CSV, com filtros
+- **Importar de Excel/CSV** — professores e horários de uma só vez, a partir de modelos já com as listas da escola, com pré-visualização e verificação de erros e conflitos antes de gravar; também é possível colar uma lista de professores
 - **Várias escolas** — cada escola só vê os seus professores, turmas, horários, faltas e contas
 - **Login e perfis** — Administrador da escola, Secretaria (consulta, edita e justifica faltas) e Contínuo (só a aplicação móvel)
 - **Painel da plataforma** (porta 8080) — o dono do projeto cria escolas, administradores, secretarias e contínuos, suspende escolas e acompanha os números de todas

@@ -8,7 +8,10 @@
     <%- include('../partials/sidebar') %>
 
     <div class="main-content">
-      <%- include('../partials/topbar', { pageSubtitle: 'Escolha a turma e clique num bloco da grelha para adicionar ou alterar uma aula.' }) %>
+      <%- include('../partials/topbar', {
+        pageSubtitle: 'Escolha a turma e clique num bloco da grelha para adicionar ou alterar uma aula.',
+        pageAction: ehAdmin ? '<a href="/importar" class="btn btn-outline"><i class="fa-solid fa-file-import"></i> Importar horários de Excel</a>' : ''
+      }) %>
 
       <main class="content-body">
 

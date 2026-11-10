@@ -20,6 +20,7 @@ const configuracoesRoutes = require('./routes/configuracoes');
 const authRoutes = require('./routes/auth');
 const utilizadoresRoutes = require('./routes/utilizadores');
 const { router: apiRoutes, errosApi } = require('./routes/api');
+const importarRoutes = require('./routes/importar');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -32,7 +33,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.use('/api', express.json({ limit: '100kb' }), apiRoutes, errosApi);
 
 // Middlewares
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use(express.json());
 app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -65,6 +66,7 @@ app.use('/horarios', horariosRoutes);
 app.use('/relatorios', relatoriosRoutes);
 app.use('/configuracoes', configuracoesRoutes);
 app.use('/utilizadores', utilizadoresRoutes);
+app.use('/importar', importarRoutes);
 
 // 404
 app.use((req, res) => {

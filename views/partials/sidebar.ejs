@@ -45,6 +45,10 @@
       <span>Disciplinas</span>
     </a>
     <% if (typeof ehAdmin !== 'undefined' && ehAdmin) { %>
+      <a href="/importar" class="nav-item <%= activePage === 'importar' ? 'active' : '' %>">
+        <span class="nav-icon"><i class="fa-solid fa-file-import"></i></span>
+        <span>Importar</span>
+      </a>
       <a href="/utilizadores" class="nav-item <%= activePage === 'utilizadores' ? 'active' : '' %>">
         <span class="nav-icon"><i class="fa-solid fa-user-shield"></i></span>
         <span>Utilizadores</span>

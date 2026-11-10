@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body>
+  <div class="app-layout">
+    <%- include('../partials/sidebar') %>
+
+    <div class="main-content">
+      <%- include('../partials/topbar', { pageSubtitle: 'Ainda nada foi gravado. Confira as linhas e confirme a importação.' }) %>
+
+      <main class="content-body">
+        <%
+          const r = analise.resumo;
+          const ehProf = tipo === 'professores';
+          const rotuloEstado = { novo: ehProf ? 'Novo' : 'Nova aula', atualizar: 'Atualiza', ignorada: 'Ignorada', erro: 'Erro' };
+          const classeEstado = { novo: 'badge-success', atualizar: 'badge-neutral', ignorada: 'badge-muted', erro: 'badge-danger' };
+          const criacoes = [
+            r.novasDisciplinas && r.novasDisciplinas.length && `${r.novasDisciplinas.length} disciplina(s) nova(s): ${r.novasDisciplinas.join(', ')}`,
+            r.novasTurmas && r.novasTurmas.length && `${r.novasTurmas.length} turma(s) nova(s): ${r.novasTurmas.join(', ')}`,
+            r.novosProfessores && r.novosProfessores.length && `${r.novosProfessores.length} professor(es) novo(s): ${r.novosProfessores.join(', ')}`
+          ].filter(Boolean);
+        %>
+
+        <div class="previa-origem">
+          <i class="fa-regular fa-file-lines"></i> <strong><%= origem %></strong> · <%= analise.linhas.length %> linha(s) lida(s)
+          <a href="/importar" class="link">Escolher outro ficheiro</a>
+        </div>
+
+        <div class="mini-stats previa-stats">
+          <div class="mini-stat"><span class="mini-stat-label"><%= ehProf ? 'Professores novos' : 'Aulas a importar' %></span><span class="mini-stat-value text-success"><%= r.novo %></span></div>
+          <% if (ehProf) { %>
+            <div class="mini-stat"><span class="mini-stat-label">Professores a atualizar</span><span class="mini-stat-value"><%= r.atualizar %></span></div>
+          <% } %>
+          <div class="mini-stat"><span class="mini-stat-label">Ignoradas (já existem)</span><span class="mini-stat-value"><%= r.ignorada %></span></div>
+          <div class="mini-stat"><span class="mini-stat-label">Com erros</span><span class="mini-stat-value <%= r.erro ? 'text-danger' : '' %>"><%= r.erro %></span></div>
+        </div>
+
+        <% if (criacoes.length || r.aulasApagar) { %>
+          <div class="alert alert-warning previa-avisos">
+            <i class="fa-solid fa-circle-info"></i>
+            <div>
+              <strong>Também vai acontecer:</strong>
+              <ul>
+                <% criacoes.forEach(t => { %><li><%= t %></li><% }) %>
+                <% if (r.aulasApagar) { %><li>Serão substituídas <strong><%= r.aulasApagar %> aula(s) atuais</strong> de: <%= r.turmasApagar.join(', ') %></li><% } %>
+              </ul>
+            </div>
+          </div>
+        <% } %>
+
+        <div class="card previa-card">
+          <div class="card-header">
+            <h3>Linhas do ficheiro</h3>
+            <div class="previa-filtro" role="group" aria-label="Filtrar linhas">
+              <button type="button" class="btn btn-soft btn-sm ativo" data-filtro="todas">Todas</button>
+              <button type="button" class="btn btn-soft btn-sm" data-filtro="erro">Só erros (<%= r.erro %>)</button>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="table-compact previa-tabela">
+              <thead>
+                <tr>
+                  <th>Linha</th>
+                  <% if (ehProf) { %>
+                    <th>Professor</th><th>Email</th><th>Disciplinas</th><th>Turmas</th>
+                  <% } else { %>
+                    <th>Turma</th><th>Dia</th><th>Horário</th><th>Disciplina</th><th>Professor</th><th>Sala</th>
+                  <% } %>
+                  <th>Resultado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% analise.linhas.forEach(l => { const d = l.dados; %>
+                  <tr class="previa-linha estado-<%= l.estado %>" data-estado="<%= l.estado %>">
+                    <td class="cell-muted"><%= l.linha %></td>
+                    <% if (ehProf) { %>
+                      <td class="cell-name"><%= d.nome || '—' %></td>
+                      <td class="cell-muted"><%= d.email || '—' %></td>
+                      <td><%= d.disciplinas || '—' %></td>
+                      <td><%= d.turmas || '—' %></td>
+                    <% } else { %>
+                      <td class="cell-name"><%= d.turma || '—' %></td>
+                      <td><%= d.dia || '—' %></td>
+                      <td><%= d.inicio || '—' %><%= d.fim ? '–' + d.fim : '' %></td>
+                      <td><%= d.disciplina || '—' %></td>
+                      <td><%= d.professor || '—' %></td>
+                      <td class="cell-muted"><%= d.sala || '—' %></td>
+                    <% } %>
+                    <td class="previa-resultado">
+                      <span class="badge <%= classeEstado[l.estado] %>"><%= rotuloEstado[l.estado] %></span>
+                      <% if (l.erros.length) { %>
+                        <ul class="previa-msgs erro"><% l.erros.forEach(m => { %><li><%= m %></li><% }) %></ul>
+                      <% } else if (l.descricao && l.estado !== 'novo') { %>
+                        <span class="previa-desc"><%= l.descricao %></span>
+                      <% } %>
+                      <% if (l.avisos.length) { %>
+                        <ul class="previa-msgs aviso"><% l.avisos.forEach(m => { %><li><%= m %></li><% }) %></ul>
+                      <% } %>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <form method="POST" action="/importar/<%= tipo %>/confirmar" class="previa-confirmar">
+          <input type="hidden" name="dados" value="<%= dados %>">
+          <% if (opcoes.criarEmFalta) { %><input type="hidden" name="criar_em_falta" value="1"><% } %>
+          <% if (opcoes.criarProfessores) { %><input type="hidden" name="criar_professores" value="1"><% } %>
+          <% if (opcoes.substituir) { %><input type="hidden" name="substituir" value="1"><% } %>
+
+          <div>
+            <% if (r.validas) { %>
+              <strong><%= r.validas %> linha(s) serão importadas.</strong>
+              <% if (r.erro) { %><span class="cell-muted">As <%= r.erro %> linha(s) com erros ficam de fora — pode corrigi-las no ficheiro e importar outra vez.</span><% } %>
+            <% } else { %>
+              <strong>Não há linhas para importar.</strong> <span class="cell-muted">Corrija os erros no ficheiro e carregue-o outra vez.</span>
+            <% } %>
+          </div>
+          <div class="previa-botoes">
+            <a href="/importar" class="btn btn-outline">Cancelar</a>
+            <button type="submit" class="btn btn-primary" <%= r.validas ? '' : 'disabled' %>
+                    <% if (r.aulasApagar) { %>onclick="return confirm('Vão ser substituídas <%= r.aulasApagar %> aulas atuais. Continuar?')"<% } %>>
+              <i class="fa-solid fa-file-import"></i> Importar <%= r.validas %> linha(s)
+            </button>
+          </div>
+        </form>
+
+      </main>
+    </div>
+  </div>
+
+  <script>
+    // Filtro "Todas / Só erros"
+    document.querySelectorAll('[data-filtro]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-filtro]').forEach((b) => b.classList.toggle('ativo', b === btn));
+        document.querySelectorAll('.previa-linha').forEach((tr) => {
+          tr.hidden = btn.dataset.filtro === 'erro' && tr.dataset.estado !== 'erro';
+        });
+      });
+    });
+  </script>
+  <%- include('../partials/scripts') %>
+</body>
+</html>

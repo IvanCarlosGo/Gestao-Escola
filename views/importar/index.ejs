@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body>
+  <div class="app-layout">
+    <%- include('../partials/sidebar') %>
+
+    <div class="main-content">
+      <%- include('../partials/topbar', { pageSubtitle: 'Carregue muitos professores e aulas de uma só vez, a partir de uma folha de Excel.' }) %>
+
+      <main class="content-body">
+
+        <% if (success) { %>
+          <div class="alert alert-success"><i class="fa-solid fa-circle-check"></i> <%= success %></div>
+        <% } %>
+        <% if (error) { %>
+          <div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i> <%= error %></div>
+        <% } %>
+
+        <div class="import-grid">
+
+          <!-- PROFESSORES -->
+          <section class="card import-card">
+            <div class="import-card-head">
+              <span class="import-num">1</span>
+              <div>
+                <h3>Professores</h3>
+                <p>Nome, contactos, disciplinas e turmas de cada professor.</p>
+              </div>
+            </div>
+
+            <ol class="import-passos">
+              <li>
+                <strong>Descarregue o modelo</strong> — já traz as disciplinas e turmas da escola.
+                <a href="/importar/modelo/professores" class="btn btn-outline btn-sm"><i class="fa-solid fa-file-excel"></i> Modelo de professores</a>
+              </li>
+              <li><strong>Preencha</strong> uma linha por professor (ou copie para lá a lista que já tem).</li>
+              <li><strong>Carregue o ficheiro</strong> e confirme na pré-visualização.</li>
+            </ol>
+
+            <form method="POST" action="/importar/professores/previa" enctype="multipart/form-data" class="import-form">
+              <label class="ficheiro-campo">
+                <input type="file" name="ficheiro" accept=".xlsx,.csv" required>
+                <span class="ficheiro-ajuda"><i class="fa-solid fa-cloud-arrow-up"></i> Escolher ficheiro Excel (.xlsx) ou CSV</span>
+              </label>
+              <label class="checkbox-row">
+                <input type="checkbox" name="criar_em_falta" value="1" checked>
+                <span>Criar as disciplinas e turmas que ainda não existem</span>
+              </label>
+              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass"></i> Ver pré-visualização</button>
+            </form>
+
+            <details class="colar-lista">
+              <summary><i class="fa-regular fa-paste"></i> Ou cole uma lista de professores</summary>
+              <form method="POST" action="/importar/professores/previa" enctype="multipart/form-data" class="import-form">
+                <textarea name="texto" rows="7" required placeholder="Uma linha por professor:
+Nome; Disciplinas; Turmas; Email; Telefone
+
+Ana Sofia Martins; Matemática; 10ºA, 11ºB
+João Pedro Silva; Português, Inglês; 10ºB; joao@escola.cv
+Maria Costa"></textarea>
+                <span class="hint">Só o nome é obrigatório. Separe as colunas com ";" (ou copie diretamente de uma folha de cálculo) e as listas com vírgulas.</span>
+                <label class="checkbox-row">
+                  <input type="checkbox" name="criar_em_falta" value="1" checked>
+                  <span>Criar as disciplinas e turmas que ainda não existem</span>
+                </label>
+                <button type="submit" class="btn btn-outline"><i class="fa-solid fa-magnifying-glass"></i> Ver pré-visualização</button>
+              </form>
+            </details>
+          </section>
+
+          <!-- HORÁRIOS -->
+          <section class="card import-card">
+            <div class="import-card-head">
+              <span class="import-num">2</span>
+              <div>
+                <h3>Horários</h3>
+                <p>As aulas de cada turma: dia, hora, disciplina, professor e sala.</p>
+              </div>
+            </div>
+
+            <ol class="import-passos">
+              <li>
+                <strong>Descarregue o modelo</strong> — com listas para escolher turma, dia, hora, disciplina e professor.
+                <a href="/importar/modelo/horarios" class="btn btn-outline btn-sm"><i class="fa-solid fa-file-excel"></i> Modelo de horários</a>
+              </li>
+              <li><strong>Preencha</strong> uma linha por aula. Sem "Fim", a aula ocupa um bloco.</li>
+              <li><strong>Carregue o ficheiro</strong> e confirme na pré-visualização.</li>
+            </ol>
+
+            <form method="POST" action="/importar/horarios/previa" enctype="multipart/form-data" class="import-form">
+              <label class="ficheiro-campo">
+                <input type="file" name="ficheiro" accept=".xlsx,.csv" required>
+                <span class="ficheiro-ajuda"><i class="fa-solid fa-cloud-arrow-up"></i> Escolher ficheiro Excel (.xlsx) ou CSV</span>
+              </label>
+              <label class="checkbox-row">
+                <input type="checkbox" name="criar_em_falta" value="1" checked>
+                <span>Criar as disciplinas e turmas que ainda não existem</span>
+              </label>
+              <label class="checkbox-row">
+                <input type="checkbox" name="criar_professores" value="1">
+                <span>Criar os professores que ainda não existem <small class="hint">(só com o nome — atenção a erros de escrita)</small></span>
+              </label>
+              <label class="checkbox-row">
+                <input type="checkbox" name="substituir" value="1">
+                <span>Substituir o horário atual das turmas que vêm no ficheiro <small class="hint">(para refazer o horário de uma turma do zero)</small></span>
+              </label>
+              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass"></i> Ver pré-visualização</button>
+            </form>
+
+            <div class="info-box">
+              <i class="fa-solid fa-lightbulb"></i>
+              <span>Importe primeiro os <strong>professores</strong> e depois os <strong>horários</strong>. Nada é gravado sem passar pela pré-visualização.</span>
+            </div>
+          </section>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    // Mostra o nome do ficheiro escolhido
+    document.querySelectorAll('.ficheiro-campo input[type="file"]').forEach((input) => {
+      input.addEventListener('change', () => {
+        const ajuda = input.parentElement.querySelector('.ficheiro-ajuda');
+        if (input.files[0]) {
+          ajuda.textContent = input.files[0].name;
+          input.parentElement.classList.add('com-ficheiro');
+        }
+      });
+    });
+  </script>
+  <%- include('../partials/scripts') %>
+</body>
+</html>

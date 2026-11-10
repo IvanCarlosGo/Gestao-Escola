@@ -163,7 +163,7 @@ function verificarPermissao(req, res, next) {
   if (req.utilizador.perfil === 'admin') return next();
 
   const caminho = req.path;
-  const soAdmin = caminho.startsWith('/utilizadores');
+  const soAdmin = caminho.startsWith('/utilizadores') || caminho.startsWith('/importar');
   const escreve = req.method !== 'GET' || /\/(novo|editar)$/.test(caminho);
   const permitido = PERMITIDO_SECRETARIA.some((r) => r.metodo === req.method && r.caminho.test(caminho));
 
