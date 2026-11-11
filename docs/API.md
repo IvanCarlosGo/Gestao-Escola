@@ -6,6 +6,7 @@ A aplicação web consulta, gere e exporta estes registos.
 - **Base:** `http://<servidor>:3000/api`
 - **Formato:** JSON em UTF-8 (`Content-Type: application/json`)
 - **Datas:** `AAAA-MM-DD` · **Horas:** `HH:MM` · **Fuso horário:** o da escola (`TZ`, por omissão `Atlantic/Cape_Verde`)
+- **Coleção Insomnia:** [`docs/insomnia/gestao-escolar-api.insomnia.json`](insomnia/gestao-escolar-api.insomnia.json) — importe-a (*Import › From File*), escolha o ambiente **Local**, preencha `email`/`palavra_passe` e execute **Login** (o token é lido automaticamente da resposta).
 
 ## Autenticação
 
@@ -31,9 +32,12 @@ Resposta `200`:
 {
   "token": "3.1796425778513.Yk1…",
   "expira_em": "2026-12-04T23:09:38.513Z",
-  "utilizador": { "id": 3, "nome": "Maria Lopes", "email": "secretaria@escola.cv", "perfil": "secretaria", "perfil_nome": "Secretaria" }
+  "utilizador": { "id": 3, "nome": "Maria Lopes", "email": "secretaria@escola.cv", "perfil": "secretaria", "perfil_nome": "Secretaria",
+                  "escola": { "id": 1, "nome": "Escola Secundária Exemplo", "sigla": "ESE" } }
 }
 ```
+
+Se a escola do utilizador estiver suspensa no painel da plataforma, responde `403`.
 
 ### `GET /api/eu`
 
@@ -130,7 +134,8 @@ Todas as respostas de erro têm o formato `{ "erro": "mensagem" }` (às vezes co
 | Código | Quando |
 |---|---|
 | `400` | Dados inválidos ou JSON mal formado (`detalhes` lista os problemas) |
-| `401` | Sem token, token inválido/expirado ou conta desativada |
+| `401` | Sem token, token inválido/expirado, conta desativada ou escola suspensa |
+| `403` | Login de um utilizador cuja escola está suspensa |
 | `404` | Professor, aula ou endpoint inexistente |
 | `409` | Falta já registada |
 | `429` | Demasiadas tentativas de login |

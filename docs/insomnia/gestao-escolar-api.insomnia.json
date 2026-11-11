@@ -1,0 +1,367 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-11-11T16:53:44.436Z",
+  "__export_source": "insomnia.desktop.app:v8.6.1",
+  "resources": [
+    {
+      "_id": "wrk_gestao_escolar_api",
+      "_type": "workspace",
+      "parentId": null,
+      "scope": "collection",
+      "name": "Gestão Escolar — API da aplicação móvel",
+      "description": "API JSON usada pela gestao_escolar_app (registo de faltas). Documentação: docs/API.md.\n\n1. Escolha o ambiente \"Local\" e preencha email e palavra_passe.\n2. Execute Autenticação › Login — o token é lido automaticamente da última resposta do login.\n3. Use os restantes pedidos."
+    },
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "parentId": "wrk_gestao_escolar_api",
+      "name": "Base Environment",
+      "data": {
+        "token": "{% response 'body', 'req_login', 'b64::JC50b2tlbg==::46b', 'never', 60 %}",
+        "professor_id": 1,
+        "horario_id": 1,
+        "turma_id": 1,
+        "dia_semana": "segunda",
+        "data": "2026-11-11"
+      }
+    },
+    {
+      "_id": "env_local",
+      "_type": "environment",
+      "parentId": "env_base",
+      "name": "Local",
+      "color": "#1e88e5",
+      "data": {
+        "base_url": "http://localhost:3000/api",
+        "email": "admin@escola.cv",
+        "palavra_passe": ""
+      }
+    },
+    {
+      "_id": "env_producao",
+      "_type": "environment",
+      "parentId": "env_base",
+      "name": "Servidor",
+      "color": "#43a047",
+      "data": {
+        "base_url": "http://SERVIDOR:3000/api",
+        "email": "",
+        "palavra_passe": ""
+      }
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "parentId": "wrk_gestao_escolar_api",
+      "name": "Autenticação",
+      "metaSortKey": 1,
+      "description": "Token válido 30 dias. 5 tentativas falhadas bloqueiam o email 10 minutos (429)."
+    },
+    {
+      "_id": "fld_consulta",
+      "_type": "request_group",
+      "parentId": "wrk_gestao_escolar_api",
+      "name": "Consulta",
+      "metaSortKey": 2
+    },
+    {
+      "_id": "fld_registo",
+      "_type": "request_group",
+      "parentId": "wrk_gestao_escolar_api",
+      "name": "Registo",
+      "metaSortKey": 3,
+      "description": "Pedidos repetidos são seguros: se a falta já existir (mesmo professor, data e aula) a API responde 409 com falta_id."
+    },
+    {
+      "_id": "fld_erros",
+      "_type": "request_group",
+      "parentId": "wrk_gestao_escolar_api",
+      "name": "Erros comuns",
+      "metaSortKey": 4
+    },
+    {
+      "_id": "req_login",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Login",
+      "method": "POST",
+      "url": "{{ _.base_url }}/login",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"{{ _.email }}\",\n  \"palavra_passe\": \"{{ _.palavra_passe }}\"\n}"
+      },
+      "parameters": [],
+      "authentication": {},
+      "description": "POST /api/login → { token, expira_em, utilizador: { id, nome, email, perfil, perfil_nome, escola: { id, nome, sigla } } }\n\nErros: 401 credenciais incorretas · 403 escola suspensa · 429 demasiadas tentativas.",
+      "metaSortKey": 0
+    },
+    {
+      "_id": "req_eu",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Utilizador atual (validar token)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/eu",
+      "headers": [],
+      "body": {},
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "description": "GET /api/eu — devolve o utilizador do token. A aplicação chama-o ao abrir; se vier 401, volta ao login.",
+      "metaSortKey": 1
+    },
+    {
+      "_id": "req_aulas_agora",
+      "_type": "request",
+      "parentId": "fld_consulta",
+      "name": "Aulas a decorrer agora",
+      "method": "GET",
+      "url": "{{ _.base_url }}/aulas-agora",
+      "headers": [],
+      "body": {},
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "description": "GET /api/aulas-agora → { data, hora, dia_semana, dia_semana_nome, proxima_aula, aulas: [{ horario_id, professor_id, professor_nome, disciplina_id, disciplina_nome, turma_id, turma_nome, sala, hora_inicio, hora_fim, minutos_restantes, tem_falta_hoje }] }\n\nSem aulas: aulas = [] e proxima_aula = \"HH:MM\" ou null.\nCopie professor_id e horario_id para o ambiente para usar em Registo.",
+      "metaSortKey": 2
+    },
+    {
+      "_id": "req_professores",
+      "_type": "request",
+      "parentId": "fld_consulta",
+      "name": "Professores ativos",
+      "method": "GET",
+      "url": "{{ _.base_url }}/professores",
+      "headers": [],
+      "body": {},
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "description": "GET /api/professores → [{ id, nome, disciplinas: [] }]",
+      "metaSortKey": 3
+    },
+    {
+      "_id": "req_horarios",
+      "_type": "request",
+      "parentId": "fld_consulta",
+      "name": "Horário semanal",
+      "method": "GET",
+      "url": "{{ _.base_url }}/horarios",
+      "headers": [],
+      "body": {},
+      "parameters": [
+        {
+          "name": "dia_semana",
+          "value": "{{ _.dia_semana }}",
+          "description": "segunda | terca | quarta | quinta | sexta"
+        },
+        {
+          "name": "professor_id",
+          "value": "{{ _.professor_id }}",
+          "disabled": true
+        },
+        {
+          "name": "turma_id",
+          "value": "{{ _.turma_id }}",
+          "disabled": true
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "description": "GET /api/horarios — filtros opcionais professor_id, turma_id, dia_semana.\n→ [{ id, dia_semana, hora_inicio, hora_fim, sala, professor_id, professor_nome, disciplina_id, disciplina_nome, turma_id, turma_nome }]",
+      "metaSortKey": 4
+    },
+    {
+      "_id": "req_motivos",
+      "_type": "request",
+      "parentId": "fld_consulta",
+      "name": "Motivos de falta",
+      "method": "GET",
+      "url": "{{ _.base_url }}/motivos",
+      "headers": [],
+      "body": {},
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "description": "GET /api/motivos → [\"Doença\", \"Consulta médica\", ...]",
+      "metaSortKey": 5
+    },
+    {
+      "_id": "req_faltas_dia",
+      "_type": "request",
+      "parentId": "fld_consulta",
+      "name": "Faltas do dia",
+      "method": "GET",
+      "url": "{{ _.base_url }}/faltas",
+      "headers": [],
+      "body": {},
+      "parameters": [
+        {
+          "name": "data",
+          "value": "{{ _.data }}",
+          "disabled": true,
+          "description": "AAAA-MM-DD (por omissão, hoje)"
+        },
+        {
+          "name": "professor_id",
+          "value": "{{ _.professor_id }}",
+          "disabled": true
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "description": "GET /api/faltas — faltas de um dia (por omissão hoje), opcionalmente de um professor.",
+      "metaSortKey": 6
+    },
+    {
+      "_id": "req_falta_aula",
+      "_type": "request",
+      "parentId": "fld_registo",
+      "name": "Registar falta (aula a decorrer)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/faltas",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"professor_id\": {{ _.professor_id }},\n  \"horario_id\": {{ _.horario_id }},\n  \"motivo\": \"Doença\"\n}"
+      },
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "description": "Caso principal da aplicação: tocar num professor de \"Aulas a decorrer\". Com horario_id a falta liga-se à aula e herda as horas.\n\n201 → falta criada · 409 → já registada ({ erro, falta_id }) · 400 → aula de outro professor · 404 → professor/aula inexistente.",
+      "metaSortKey": 7
+    },
+    {
+      "_id": "req_atraso",
+      "_type": "request",
+      "parentId": "fld_registo",
+      "name": "Registar atraso (horas manuais)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/faltas",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"professor_id\": {{ _.professor_id }},\n  \"data_falta\": \"{{ _.data }}\",\n  \"tipo\": \"atraso\",\n  \"hora_inicio\": \"10:15\",\n  \"hora_fim\": \"10:30\",\n  \"motivo\": \"Motivos pessoais\",\n  \"justificada\": true,\n  \"observacoes\": \"Avisou por telefone.\"\n}"
+      },
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "description": "Todos os campos: professor_id (obrigatório), horario_id, data_falta, tipo (falta|atraso), hora_inicio, hora_fim, motivo (≤255), justificada, observacoes.",
+      "metaSortKey": 8
+    },
+    {
+      "_id": "req_falta_invalida",
+      "_type": "request",
+      "parentId": "fld_registo",
+      "name": "Registar falta — dados inválidos (400)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/faltas",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"data_falta\": \"2026-13-40\",\n  \"tipo\": \"ausencia\",\n  \"hora_inicio\": \"25:00\"\n}"
+      },
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "description": "Responde 400 com { erro: \"Dados inválidos.\", detalhes: [...] }.",
+      "metaSortKey": 9
+    },
+    {
+      "_id": "req_sem_token",
+      "_type": "request",
+      "parentId": "fld_erros",
+      "name": "Sem token (401)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/aulas-agora",
+      "headers": [],
+      "body": {},
+      "parameters": [],
+      "authentication": {},
+      "description": "Sem token, token expirado, conta desativada ou escola suspensa → 401.",
+      "metaSortKey": 10
+    },
+    {
+      "_id": "req_404",
+      "_type": "request",
+      "parentId": "fld_erros",
+      "name": "Endpoint inexistente (404)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/nao-existe",
+      "headers": [],
+      "body": {},
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "description": "",
+      "metaSortKey": 11
+    },
+    {
+      "_id": "req_json_mal",
+      "_type": "request",
+      "parentId": "fld_erros",
+      "name": "JSON mal formado (400)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/faltas",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{ \"professor_id\": 1, "
+      },
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "description": "",
+      "metaSortKey": 12
+    }
+  ]
+}
