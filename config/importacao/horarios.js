@@ -1,5 +1,5 @@
 // Importação de horários: análise (pré-visualização) e gravação
-const { DIAS_SEMANA, SLOTS_LETIVOS, labelDia } = require('../horarioSlots');
+const { DIAS_SEMANA, labelDia, letivos, temposDaEscola } = require('../horarioSlots');
 const {
   EMAIL_VALIDO, chave, limpo, catalogoEscola, criarResolvedores, criarGarantidores, emTransacao, contarEstados
 } = require('./comum');
@@ -19,6 +19,7 @@ function normalizarDia(texto) {
 
 async function analisarHorarios(escolaId, linhas, opcoes) {
   const cat = await catalogoEscola(escolaId);
+  const SLOTS_LETIVOS = letivos(await temposDaEscola(escolaId));
   const resolver = criarResolvedores(cat, opcoes);
 
   const profPorEmail = new Map(cat.professores.filter((p) => p.email).map((p) => [p.email.toLowerCase(), p]));

@@ -1,5 +1,6 @@
 // Migrações executadas no arranque (idempotentes: só aplicam o que ainda falta).
 // Multi-escola: cada tabela de dados passa a ter escola_id; os dados existentes ficam na primeira escola.
+// As escolas criam-se no painel da plataforma; numa instalação nova não há nenhuma.
 const { pool } = require('./db');
 
 const TABELAS_DA_ESCOLA = ['professores', 'turmas', 'disciplinas', 'horarios', 'faltas', 'utilizadores'];
@@ -53,12 +54,17 @@ async function aplicarMigracoes() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 
+  // Dados de uma instalação antiga (anterior ao multi-escola) precisam de uma escola onde ficar
+  let comDadosAntigos = false;
+  for (const tabela of TABELAS_DA_ESCOLA) {
+    if (tabela === 'utilizadores' || await colunaExiste(tabela, 'escola_id')) continue;
+    const [[{ n }]] = await pool.query(`SELECT COUNT(*) AS n FROM ${tabela}`);
+    if (n > 0) comDadosAntigos = true;
+  }
   const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM escolas');
-  if (total === 0) {
-    await pool.query(
-      "INSERT INTO escolas (nome, sigla, logo) VALUES ('Escola Secundária Polivalente Cesaltina Ramos', 'E.S.P.C.R', '/img/logo.jpg')"
-    );
-    console.log('[migração] Escola inicial criada: Escola Secundária Polivalente Cesaltina Ramos');
+  if (total === 0 && comDadosAntigos) {
+    await pool.query("INSERT INTO escolas (nome, sigla) VALUES ('Escola', NULL)");
+    console.log('[migração] Escola criada para os dados existentes (mude o nome no painel da plataforma)');
   }
   const [[primeira]] = await pool.query('SELECT MIN(id) AS id FROM escolas');
 
@@ -80,9 +86,11 @@ async function aplicarMigracoes() {
   // escola_id em cada tabela; os registos existentes ficam na primeira escola
   for (const tabela of TABELAS_DA_ESCOLA) {
     if (await colunaExiste(tabela, 'escola_id')) continue;
+    // Tabela vazia (instalação nova): não há registos a atribuir a nenhuma escola
+    const porOmissao = primeira.id ? ` DEFAULT ${Number(primeira.id)}` : '';
     await pool.query(
       `ALTER TABLE ${tabela}
-         ADD COLUMN escola_id INT NOT NULL DEFAULT ${Number(primeira.id)} AFTER id,
+         ADD COLUMN escola_id INT NOT NULL${porOmissao} AFTER id,
          ADD INDEX idx_${tabela}_escola (escola_id),
          ADD CONSTRAINT fk_${tabela}_escola FOREIGN KEY (escola_id) REFERENCES escolas(id)`
     );
@@ -95,6 +103,12 @@ async function aplicarMigracoes() {
   if (!(await colunaExiste('escolas', 'cor'))) {
     await pool.query('ALTER TABLE escolas ADD COLUMN cor VARCHAR(7) NULL AFTER logo');
     console.log('[migração] escolas: coluna cor adicionada');
+  }
+
+  // Tempos do horário diário da escola (JSON); NULL = horário padrão (config/horarioSlots.js)
+  if (!(await colunaExiste('escolas', 'tempos'))) {
+    await pool.query('ALTER TABLE escolas ADD COLUMN tempos TEXT NULL AFTER cor');
+    console.log('[migração] escolas: coluna tempos adicionada');
   }
 
   await unicoPorEscola('turmas', 'nome', 'nome');

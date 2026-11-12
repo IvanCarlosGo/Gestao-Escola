@@ -31,6 +31,9 @@ Plataforma para gerir professores, turmas, disciplinas, horários e faltas de v�
 - **Turmas** e **Disciplinas** — gestão completa (CRUD) independente
 - **Registo de faltas** — feito pela aplicação móvel através da [API](docs/API.md); esta aplicação web consulta, gere e exporta os registos
 - **Horários** — grelha semanal clicável por turma (e por professor no perfil), com deteção de conflitos
+- **Horário da escola** — em **Definições** cada escola escolhe um modelo e pode ajustá-lo (aulas de 50 min; a tarde começa às 13:00); a grelha, a importação e a aplicação móvel usam estes tempos:
+  - *Horário da Cidade da Praia* — 07:30–12:20 (intervalo 10:20–10:40) e 13:00–17:50 (intervalo 15:50–16:10)
+  - *Horário geral* (padrão) — 08:00–12:50 e 13:00–17:50
 - **Histórico de Faltas** — lista individual de faltas/atrasos com filtros, justificação com um clique
 - **Relatórios** — estatísticas agregadas e exportação em PDF ou CSV, com filtros
 - **Importar de Excel/CSV** — professores e horários de uma só vez, a partir de modelos já com as listas da escola, com pré-visualização e verificação de erros e conflitos antes de gravar; também é possível colar uma lista de professores
@@ -49,7 +52,7 @@ gestao-escolar/
 ├── routes/                    # index, professores, faltas, turmas, disciplinas, horarios, relatorios, configuracoes
 ├── views/                     # Templates EJS
 ├── public/                    # CSS e JS estáticos
-├── db/init.sql                # Schema completo + dados de exemplo (auto-executado pelo MySQL)
+├── db/init.sql                # Schema completo, sem dados (auto-executado pelo MySQL)
 ├── db/migrate_v2.sql          # Migração aplicada a uma instalação já existente (turmas/disciplinas/horários)
 ├── docker-compose.yml         # Serviços: app, db (MySQL), adminer
 └── Dockerfile
@@ -70,16 +73,14 @@ docker compose up --build
 
 ### Primeiro acesso
 
-No primeiro arranque é criado automaticamente um administrador (`ADMIN_EMAIL`, por omissão `admin@escola.cv`).
-Se `ADMIN_PASSWORD` não estiver definido, é gerada uma palavra-passe aleatória e mostrada nos logs:
+Uma instalação nova começa **sem dados**: sem escolas, utilizadores, turmas, disciplinas, professores ou horários.
 
-```bash
-docker logs escola_app | grep -A3 "Administrador criado"
-```
+1. Entre no **painel da plataforma** (porta 8080) com a conta criada pelo seeder [painel/seeder.js](painel/seeder.js) (`admin@admin.cv`) e altere a palavra-passe em **Administradores → A minha conta**.
+2. Em **Escolas**, crie a escola (nome, sigla, logótipo e cor).
+3. Em **Utilizadores**, crie o administrador da escola (e, se quiser, a secretaria e os contínuos).
+4. O administrador entra no site da escola (porta 3000) e cria ou importa (**Importar**) as turmas, disciplinas, professores e horários.
 
-Depois de entrar, altere a palavra-passe em **Definições** e crie as restantes contas em **Utilizadores**.
-
-O **painel da plataforma** tem a sua própria conta, criada pelo seeder [painel/seeder.js](painel/seeder.js) (`admin@admin.cv`). Altere a palavra-passe em **Administradores → A minha conta** depois de entrar.
+Se já existir pelo menos uma escola e nenhum utilizador, o arranque cria um administrador nessa escola (`ADMIN_EMAIL`, por omissão `admin@escola.cv`); sem `ADMIN_PASSWORD`, a palavra-passe é gerada e mostrada nos logs (`docker logs escola_app | grep -A3 "Administrador criado"`).
 
 ```bash
 npm run seed:admin              # cria a conta se não existir
@@ -116,7 +117,7 @@ Ajusta o `.env` se necessário (por defeito `DB_HOST=db`, muda para `localhost` 
 | DB_ROOT_PASSWORD | Password root do MySQL | root_pass |
 | TZ | Fuso horário da escola (app e MySQL) | Atlantic/Cape_Verde |
 | SESSION_SECRET | Chave secreta das sessões (longa e aleatória) | — (gerada a cada arranque) |
-| ADMIN_EMAIL | Email do administrador criado no primeiro arranque | admin@escola.cv |
+| ADMIN_EMAIL | Email do administrador criado no arranque, se já houver escola e nenhum utilizador | admin@escola.cv |
 | ADMIN_PASSWORD | Palavra-passe desse administrador | — (gerada e mostrada nos logs) |
 | COOKIE_SECURE | `1` quando a aplicação estiver em HTTPS | 0 |
 | PAINEL_EMAIL | Email da conta do painel (substitui a do seeder) | admin@admin.cv |

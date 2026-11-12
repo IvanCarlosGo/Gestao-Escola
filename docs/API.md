@@ -91,12 +91,16 @@ Aulas do horário semanal. Filtros opcionais: `professor_id`, `turma_id`, `dia_s
 
 ### `GET /api/tempos`
 
-Blocos do horário diário, pela ordem do dia. `numero` é o número do tempo letivo (`null` nos intervalos).
+Tempos do horário diário **da escola**, pela ordem do dia. Cada escola escolhe um modelo em **Definições › Horário da escola** ("Horário da Cidade da Praia" ou "Horário geral", aulas de 50 min, tarde a partir das 13:00) e pode ajustá-lo; por omissão usa o Horário geral (08:00–12:50 e 13:00–17:50).
+
+`numero` é o número do tempo letivo no dia (`null` nos intervalos); `turno` é `manha` ou `tarde` (a tarde começa às 13:00).
 
 ```json
 [
-  { "numero": 1, "hora_inicio": "07:30", "hora_fim": "08:15", "intervalo": false },
-  { "numero": null, "hora_inicio": "09:45", "hora_fim": "10:30", "intervalo": true }
+  { "numero": 1, "hora_inicio": "07:30", "hora_fim": "08:20", "intervalo": false, "turno": "manha" },
+  { "numero": 2, "hora_inicio": "08:30", "hora_fim": "09:20", "intervalo": false, "turno": "manha" },
+  { "numero": null, "hora_inicio": "10:20", "hora_fim": "10:40", "intervalo": true, "turno": "manha" },
+  { "numero": 6, "hora_inicio": "13:00", "hora_fim": "13:50", "intervalo": false, "turno": "tarde" }
 ]
 ```
 

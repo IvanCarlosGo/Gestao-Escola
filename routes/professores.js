@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/db');
-const { DIAS_SEMANA, SLOTS, montarGrelha } = require('../config/horarioSlots');
+const { DIAS_SEMANA, montarGrelha, temposDaEscola } = require('../config/horarioSlots');
 const { diasUteisMes } = require('../config/ui');
 
 // Todas as consultas são da escola de quem tem sessão iniciada (req.escolaId)
@@ -192,7 +192,8 @@ router.get('/:id', async (req, res, next) => {
     const totalFaltas = faltas.length;
     const totalJustificadas = faltas.filter((f) => f.justificada).length;
 
-    const { grelha, blocosOcupados, totalBlocos } = montarGrelha(horarios);
+    const tempos = await temposDaEscola(req.escolaId);
+    const { grelha, blocosOcupados, totalBlocos } = montarGrelha(horarios, tempos);
 
     // Opções do modal da grelha: as turmas e disciplinas do professor aparecem primeiro
     const catalogo = await getCatalogo(req.escolaId);
@@ -218,7 +219,7 @@ router.get('/:id', async (req, res, next) => {
       resumoHorario: { blocosOcupados, totalBlocos },
       opcoesHorario,
       diasSemana: DIAS_SEMANA,
-      slots: SLOTS,
+      slots: tempos,
       totalFaltas,
       totalJustificadas,
       tab,

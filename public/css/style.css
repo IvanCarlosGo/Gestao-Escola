@@ -1015,7 +1015,9 @@ tbody tr:nth-last-child(-n+2):not(:nth-child(-n+2)) .row-menu-list { top: auto; 
 
 .form-group input,
 .form-group select,
-.form-group textarea {
+.form-group textarea,
+.tempos-tabela input,
+.tempos-tabela select {
   border: 1px solid #d5dae3;
   border-radius: var(--radius-md);
   padding: 10px 12px;
@@ -1028,12 +1030,16 @@ tbody tr:nth-last-child(-n+2):not(:nth-child(-n+2)) .row-menu-list { top: auto; 
   width: 100%;
 }
 
-.form-group select { padding-right: 36px; }
+.form-group select, .tempos-tabela select { padding-right: 36px; }
+.tempos-tabela input, .tempos-tabela select { padding: 7px 10px; }
+.tempos-tabela select { padding-right: 32px; }
 
 .form-group input:hover,
 .form-group select:hover,
 .form-group textarea:hover { border-color: var(--color-text-soft); }
 
+.tempos-tabela input:focus,
+.tempos-tabela select:focus,
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
@@ -2057,3 +2063,21 @@ a.user-avatar:hover { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35); }
   .import-grid { grid-template-columns: 1fr; }
   .previa-stats { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* =========================================================
+   Definições: tempos do horário da escola
+   ========================================================= */
+
+.tempos-intro { margin: 0 0 14px; font-size: 12.5px; color: var(--color-text-muted); line-height: 1.5; }
+.tempos-intro a { color: var(--color-primary); font-weight: 600; }
+.table-responsive { overflow-x: auto; }
+.tempos-tabela { min-width: 440px; }
+.tempos-tabela th { text-align: left; font-size: 11.5px; font-weight: 600; color: var(--color-text-muted); padding: 6px 8px; border-bottom: 1px solid var(--color-border); }
+.tempos-tabela td { padding: 5px 8px; border-bottom: 1px solid var(--color-border); }
+.tempos-tabela input, .tempos-tabela select { width: 100%; min-width: 96px; }
+.tempos-tabela .tempo-turno { font-size: 12px; color: var(--color-text-muted); width: 70px; }
+.tempos-tabela tr.tempo-intervalo td { background: var(--color-surface-soft); }
+.tempos-modelo { max-width: 360px; margin-bottom: 14px; }
+.tempos-acoes { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.tempos-espaco { flex: 1; }
+.schedule-row-turno td { color: var(--color-primary); padding: 6px 0; letter-spacing: 0.04em; text-transform: uppercase; }

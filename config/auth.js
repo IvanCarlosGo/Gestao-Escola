@@ -202,6 +202,12 @@ async function prepararUtilizadores() {
   // A tabela é criada em config/migracoes.js
   const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM utilizadores');
   if (total > 0) return;
+  // Sem escolas ainda: os administradores das escolas criam-se no painel da plataforma (porta 8080)
+  const [[{ escolas }]] = await pool.query('SELECT COUNT(*) AS escolas FROM escolas');
+  if (escolas === 0) {
+    console.log('Ainda não há escolas: crie-as, e aos seus administradores, no painel da plataforma.');
+    return;
+  }
 
   // Primeiro arranque: cria o administrador. Sem ADMIN_PASSWORD definido, gera uma palavra-passe aleatória.
   const email = (process.env.ADMIN_EMAIL || 'admin@escola.cv').trim().toLowerCase();

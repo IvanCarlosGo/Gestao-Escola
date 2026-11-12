@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/db');
-const { DIAS_SEMANA, SLOTS, labelDia } = require('../config/horarioSlots');
+const { DIAS_SEMANA, labelDia, temposDaEscola, turnoDeHora } = require('../config/horarioSlots');
 const { MOTIVOS_FALTA } = require('../config/ui');
 const { aulasAgora, calcularProgresso } = require('../config/aulas');
 const {
@@ -183,15 +183,21 @@ router.get('/horarios', async (req, res, next) => {
   }
 });
 
-// GET /api/tempos  -> blocos do horário diário (tempos letivos e intervalos)
-router.get('/tempos', (req, res) => {
-  let numero = 0;
-  res.json(SLOTS.map((s) => ({
-    numero: s.intervalo ? null : ++numero,
-    hora_inicio: s.inicio,
-    hora_fim: s.fim,
-    intervalo: Boolean(s.intervalo)
-  })));
+// GET /api/tempos  -> tempos do horário diário da escola (tempos letivos e intervalos)
+router.get('/tempos', async (req, res, next) => {
+  try {
+    let numero = 0;
+    const tempos = await temposDaEscola(req.escolaId);
+    res.json(tempos.map((s) => ({
+      numero: s.intervalo ? null : ++numero,
+      hora_inicio: s.inicio,
+      hora_fim: s.fim,
+      intervalo: Boolean(s.intervalo),
+      turno: turnoDeHora(s.inicio)
+    })));
+  } catch (err) {
+    next(err);
+  }
 });
 
 // GET /api/motivos  -> lista sugerida de motivos

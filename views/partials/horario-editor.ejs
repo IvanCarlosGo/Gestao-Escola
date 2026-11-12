@@ -40,7 +40,16 @@
         </tr>
       </thead>
       <tbody>
-        <% slots.forEach(slot => { %>
+        <% slots.forEach((slot, i) => { %>
+          <%# Salto grande entre tempos (30 min ou mais, ex: 12:20 → 13:00): mudança de turno.
+              Os 10 min entre aulas (mudança de sala) não têm linha própria. %>
+          <% const minutos = (h) => Number(h.slice(0, 2)) * 60 + Number(h.slice(3, 5)); %>
+          <% if (i > 0 && minutos(slot.inicio) - minutos(slots[i - 1].fim) >= 30) { %>
+            <tr class="schedule-row-break schedule-row-turno">
+              <td class="schedule-time-cell"><%= slots[i - 1].fim %>–<%= slot.inicio %></td>
+              <td colspan="<%= diasSemana.length %>"><%= slot.inicio >= '12:00' ? 'Turno da tarde' : 'Pausa' %></td>
+            </tr>
+          <% } %>
           <% if (slot.intervalo) { %>
             <tr class="schedule-row-break">
               <td class="schedule-time-cell"><%= slot.inicio %>–<%= slot.fim %></td>

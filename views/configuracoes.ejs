@@ -79,9 +79,142 @@
           <% } %>
         </div>
 
+        <%# Tempos do horário diário: usados na grelha de horários, na importação e na aplicação móvel %>
+        <% const linhasTempos = locals.temposEnviados || tempos; %>
+        <div class="card settings-width settings-card" id="horario-escola">
+          <div class="card-header">
+            <h3>Horário da escola</h3>
+            <span class="badge <%= modeloAtual ? 'badge-muted' : 'badge-neutral' %>"><%= modeloAtual ? modelosHorario[modeloAtual].nome : 'Personalizado' %></span>
+          </div>
+          <% if (locals.aviso) { %>
+            <div class="alert alert-warning"><i class="fa-solid fa-triangle-exclamation"></i> <%= aviso %></div>
+          <% } %>
+          <p class="tempos-intro">
+            Os tempos de aula e os intervalos de cada dia. A grelha de <a href="/horarios">Horários</a>, a importação e a aplicação móvel usam estes tempos.
+            O turno da tarde começa às <%= inicioTarde %>. Escolha um modelo e, se precisar, ajuste os tempos.
+          </p>
+
+          <form method="POST" action="/configuracoes/tempos" id="formTempos">
+            <div class="form-group tempos-modelo">
+              <label for="modeloHorario">Modelo de horário</label>
+              <select id="modeloHorario" <%= ehAdmin ? '' : 'disabled' %>>
+                <% Object.entries(modelosHorario).forEach(([chave, m]) => { %>
+                  <option value="<%= chave %>" <%= modeloAtual === chave ? 'selected' : '' %>><%= m.nome %><%= chave === modeloPadrao ? ' (padrão)' : '' %></option>
+                <% }) %>
+                <option value="" <%= modeloAtual ? '' : 'selected' %>>Personalizado</option>
+              </select>
+            </div>
+            <div class="table-responsive">
+              <table class="tempos-tabela">
+                <thead>
+                  <tr><th>Turno</th><th>Início</th><th>Fim</th><th>Tipo</th><% if (ehAdmin) { %><th></th><% } %></tr>
+                </thead>
+                <tbody id="temposCorpo">
+                  <% linhasTempos.forEach((t) => { %>
+                    <tr class="<%= t.intervalo ? 'tempo-intervalo' : '' %>">
+                      <td class="tempo-turno"><%= t.inicio && t.inicio >= inicioTarde ? 'Tarde' : 'Manhã' %></td>
+                      <td><input type="time" name="inicio" value="<%= t.inicio %>" step="300" required <%= ehAdmin ? '' : 'disabled' %>></td>
+                      <td><input type="time" name="fim" value="<%= t.fim %>" step="300" required <%= ehAdmin ? '' : 'disabled' %>></td>
+                      <td>
+                        <select name="tipo" <%= ehAdmin ? '' : 'disabled' %>>
+                          <option value="aula" <%= t.intervalo ? '' : 'selected' %>>Aula</option>
+                          <option value="intervalo" <%= t.intervalo ? 'selected' : '' %>>Intervalo</option>
+                        </select>
+                      </td>
+                      <% if (ehAdmin) { %>
+                        <td><button type="button" class="btn btn-icon btn-danger-ghost" data-remover-tempo title="Remover" aria-label="Remover este tempo"><i class="fa-solid fa-trash-can"></i></button></td>
+                      <% } %>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+
+            <% if (ehAdmin) { %>
+              <div class="form-actions tempos-acoes">
+                <button type="button" class="btn btn-outline btn-sm" id="adicionarTempo"><i class="fa-solid fa-plus"></i> Adicionar tempo</button>
+                <span class="tempos-espaco"></span>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar horário</button>
+              </div>
+            <% } else { %>
+              <p class="tempos-intro">Só o administrador da escola pode alterar os tempos.</p>
+            <% } %>
+          </form>
+        </div>
+
       </main>
     </div>
   </div>
   <%- include('partials/scripts') %>
+  <% if (ehAdmin) { %>
+  <script>
+    (function () {
+      const corpo = document.getElementById('temposCorpo');
+      const seletor = document.getElementById('modeloHorario');
+      const modelos = <%- JSON.stringify(modelosHorario) %>;
+      const inicioTarde = '<%= inicioTarde %>';
+      const somar = (hhmm, min) => {
+        const [h, m] = hhmm.split(':').map(Number);
+        const t = Math.min(h * 60 + m + min, 23 * 60 + 55);
+        return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
+      };
+      function atualizar(linha) {
+        const inicio = linha.querySelector('[name="inicio"]').value;
+        linha.querySelector('.tempo-turno').textContent = inicio && inicio >= inicioTarde ? 'Tarde' : 'Manhã';
+        linha.classList.toggle('tempo-intervalo', linha.querySelector('[name="tipo"]').value === 'intervalo');
+      }
+      // Qualquer alteração à tabela passa o modelo para "Personalizado"
+      const personalizar = () => { seletor.value = ''; };
+      corpo.addEventListener('input', (e) => { atualizar(e.target.closest('tr')); personalizar(); });
+      corpo.addEventListener('change', (e) => { atualizar(e.target.closest('tr')); personalizar(); });
+      corpo.addEventListener('click', (e) => {
+        const botao = e.target.closest('[data-remover-tempo]');
+        if (!botao) return;
+        if (corpo.rows.length === 1) return alert('Tem de haver pelo menos um tempo.');
+        botao.closest('tr').remove();
+        personalizar();
+      });
+
+      // Escolher um modelo preenche a tabela com os seus tempos (que depois se podem ajustar)
+      function preencher(tempos) {
+        const molde = corpo.rows[0];
+        corpo.innerHTML = '';
+        tempos.forEach((t) => {
+          const linha = molde.cloneNode(true);
+          linha.querySelector('[name="inicio"]').value = t.inicio;
+          linha.querySelector('[name="fim"]').value = t.fim;
+          linha.querySelector('[name="tipo"]').value = t.intervalo ? 'intervalo' : 'aula';
+          corpo.appendChild(linha);
+          atualizar(linha);
+        });
+      }
+      let anterior = seletor.value;
+      seletor.addEventListener('change', () => {
+        const modelo = modelos[seletor.value];
+        if (!modelo) { anterior = ''; return; } // "Personalizado": mantém a tabela
+        if (anterior === '' && !confirm('Substituir os tempos atuais pelos do ' + modelo.nome + '?')) {
+          seletor.value = anterior;
+          return;
+        }
+        preencher(modelo.tempos);
+        anterior = seletor.value;
+      });
+
+      // Novo tempo: começa 10 min depois do fim do último e dura 50 min
+      document.getElementById('adicionarTempo').addEventListener('click', () => {
+        const ultima = corpo.rows[corpo.rows.length - 1];
+        const nova = ultima.cloneNode(true);
+        const inicio = somar(ultima.querySelector('[name="fim"]').value || '07:20', 10);
+        nova.querySelector('[name="inicio"]').value = inicio;
+        nova.querySelector('[name="fim"]').value = somar(inicio, 50);
+        nova.querySelector('[name="tipo"]').value = 'aula';
+        corpo.appendChild(nova);
+        atualizar(nova);
+        personalizar();
+        nova.querySelector('[name="inicio"]').focus();
+      });
+    })();
+  </script>
+  <% } %>
 </body>
 </html>

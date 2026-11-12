@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/db');
-const { DIAS_SEMANA, SLOTS, labelDia, montarGrelha } = require('../config/horarioSlots');
+const { DIAS_SEMANA, labelDia, montarGrelha, temposDaEscola } = require('../config/horarioSlots');
 const { partesTurma } = require('../config/ui');
 
 const hhmm = (hora) => String(hora || '').slice(0, 5);
@@ -123,7 +123,8 @@ router.get('/', async (req, res, next) => {
       );
     }
 
-    const { grelha, blocosOcupados, totalBlocos } = montarGrelha(aulas);
+    const tempos = await temposDaEscola(req.escolaId);
+    const { grelha, blocosOcupados, totalBlocos } = montarGrelha(aulas, tempos);
 
     // Disciplinas e professores para o modal: quem dá cada disciplina, e quem está ligado à turma
     const [disciplinas] = await pool.query('SELECT id, nome FROM disciplinas WHERE escola_id = ? ORDER BY nome ASC', [req.escolaId]);
@@ -157,7 +158,7 @@ router.get('/', async (req, res, next) => {
       anos,
       turma,
       grelha,
-      slots: SLOTS,
+      slots: tempos,
       diasSemana: DIAS_SEMANA,
       professoresTurma,
       resumo: { totalAulas: aulas.length, blocosOcupados, totalBlocos },

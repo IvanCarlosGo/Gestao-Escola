@@ -132,24 +132,3 @@ PREPARE stmt2 FROM @sql2;
 EXECUTE stmt2;
 DEALLOCATE PREPARE stmt2;
 
--- Dados de exemplo para horários (grelha Seg-Sex, 4 blocos por professor, na sua turma principal)
-INSERT INTO horarios (professor_id, disciplina_id, turma_id, dia_semana, hora_inicio, hora_fim, sala)
-SELECT p.id, pd.disciplina_id, ptx.turma_id, dia.dia_semana, slot.hora_inicio, slot.hora_fim,
-       CONCAT('Sala ', LPAD(FLOOR(1 + RAND() * 20), 2, '0'))
-FROM professores p
-JOIN professor_disciplinas pd ON pd.professor_id = p.id
-JOIN (
-  SELECT professor_id, MIN(turma_id) AS turma_id FROM professor_turmas GROUP BY professor_id
-) ptx ON ptx.professor_id = p.id
-JOIN (
-  SELECT 'segunda' AS dia_semana UNION ALL SELECT 'terca' UNION ALL SELECT 'quarta'
-  UNION ALL SELECT 'quinta' UNION ALL SELECT 'sexta'
-) dia
-JOIN (
-  SELECT '07:30:00' AS hora_inicio, '08:15:00' AS hora_fim UNION ALL
-  SELECT '08:15:00', '09:00:00' UNION ALL
-  SELECT '09:00:00', '09:45:00' UNION ALL
-  SELECT '14:00:00', '14:45:00'
-) slot
-WHERE NOT EXISTS (SELECT 1 FROM horarios h WHERE h.professor_id = p.id)
-LIMIT 200;

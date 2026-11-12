@@ -1,6 +1,6 @@
 // Ficheiros-modelo (.xlsx) para importar professores e horários, já com as listas da escola
 const ExcelJS = require('exceljs');
-const { DIAS_SEMANA, SLOTS_LETIVOS } = require('../horarioSlots');
+const { DIAS_SEMANA, letivos, temposDaEscola } = require('../horarioSlots');
 const { catalogoEscola } = require('./comum');
 const { COR_PADRAO } = require('../cores');
 const { MARCA } = require('../marca');
@@ -61,6 +61,7 @@ function listaPendente(folha, coluna, formula, { livre = false, titulo = '', err
 async function gerarModelo(escolaId, tipo, corEscola) {
   const cor = corEscola || COR_PADRAO;
   const cat = await catalogoEscola(escolaId);
+  const SLOTS_LETIVOS = letivos(await temposDaEscola(escolaId));
   const ordenar = (arr) => [...arr].sort((a, b) => a.localeCompare(b, 'pt'));
   const wb = new ExcelJS.Workbook();
   wb.creator = MARCA.nome;
