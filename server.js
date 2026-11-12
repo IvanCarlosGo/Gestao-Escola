@@ -8,6 +8,7 @@ const { waitForDatabase } = require('./config/db');
 const { iniciais, avatarCor, MOTIVOS_FALTA, dataCurta, dataNumerica } = require('./config/ui');
 const { carregarUtilizador, exigirLogin, verificarPermissao, prepararUtilizadores } = require('./config/auth');
 const { migrar } = require('./config/migracoes');
+const { MARCA } = require('./config/marca');
 
 const indexRoutes = require('./routes/index');
 const professoresRoutes = require('./routes/professores');
@@ -29,13 +30,27 @@ const PORT = process.env.PORT || 3000;
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// API da aplicação móvel: JSON + autenticação por token (independente da sessão por cookie)
+// API da aplicação móvel: JSON + autenticação por token (independente da sessão por cookie).
+// CORS aberto: a API não usa cookies (só "Authorization: Bearer"), por isso a versão web da app
+// pode chamá-la a partir de outro endereço sem expor as sessões do site.
+app.use('/api', (req, res, next) => {
+  res.set({
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+    'Access-Control-Max-Age': '86400'
+  });
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
 app.use('/api', express.json({ limit: '100kb' }), apiRoutes, errosApi);
 
 // Middlewares
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use(express.json());
 app.use(methodOverride('_method'));
+// Imagens públicas (logótipos das escolas, marca) com CORS, para a versão web da app as mostrar
+app.use('/img', (req, res, next) => { res.set('Access-Control-Allow-Origin', '*'); next(); });
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Disponibiliza o ano atual e o path atual em todas as views
@@ -47,6 +62,7 @@ app.use((req, res, next) => {
   res.locals.motivosFalta = MOTIVOS_FALTA;
   res.locals.dataCurta = dataCurta;
   res.locals.dataNumerica = dataNumerica;
+  res.locals.marca = MARCA;
   next();
 });
 

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Assídua">
+  <rect width="100" height="100" rx="24" fill="#1B4BC2"/>
+  <circle cx="45" cy="33" r="9" fill="#F6B900"/>
+  <path d="M27 51 L43 67 L72 42" fill="none" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

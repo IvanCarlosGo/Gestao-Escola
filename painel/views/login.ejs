@@ -7,9 +7,9 @@
   <main class="login-wrap">
     <div class="login-card">
       <div class="login-brand">
-        <span class="login-icon"><i class="fa-solid fa-shield-halved"></i></span>
-        <h1>Painel da Plataforma</h1>
-        <p>Acesso reservado aos administradores da plataforma</p>
+        <img src="<%= marca.simbolo %>" alt="" class="login-simbolo" width="64" height="64">
+        <h1 class="marca-nome"><%= marca.nome %></h1>
+        <p>Painel da Plataforma · acesso reservado aos administradores</p>
       </div>
 
       <% if (error) { %>

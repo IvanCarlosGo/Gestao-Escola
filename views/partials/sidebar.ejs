@@ -10,8 +10,8 @@
     </div>
     <%# Sigla em destaque e, por baixo, o nome completo da escola %>
     <div class="brand-text brand-escola">
-      <strong><%= escolaAtual ? (escolaAtual.sigla || 'Gestão Escolar') : 'Gestão Escolar' %></strong>
-      <span><%= escolaAtual ? escolaAtual.nome : 'Faltas dos Professores' %></span>
+      <strong><%= escolaAtual ? (escolaAtual.sigla || escolaAtual.nome) : marca.nome %></strong>
+      <span><%= escolaAtual ? escolaAtual.nome : marca.descricao %></span>
     </div>
   </div>
 
@@ -76,5 +76,10 @@
       </div>
     </div>
   <% } %>
+  <%# Assinatura discreta da plataforma; a identidade em destaque é sempre a da escola %>
+  <div class="sidebar-credit" title="<%= marca.nome %> · <%= marca.slogan %>">
+    <img src="<%= marca.simbolo %>" alt="" width="16" height="16">
+    <span>com <strong class="marca-nome"><%= marca.nome %></strong></span>
+  </div>
 </aside>
 <div class="sidebar-overlay" id="sidebarOverlay"></div>

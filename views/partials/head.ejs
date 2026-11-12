@@ -1,10 +1,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><%= pageTitle %> · Gestão Escolar</title>
-<% if (typeof escola !== 'undefined' && escola && escola.logo) { %><link rel="icon" href="<%= escola.logo %>"><% } %>
+<% const escolaHead = typeof escola !== 'undefined' && escola ? escola : null; %>
+<title><%= pageTitle %> · <%= escolaHead ? (escolaHead.sigla || escolaHead.nome) : marca.nome %></title>
+<meta name="theme-color" content="<%= marca.cores.azul %>">
+<%# Ícone: o logótipo da escola quando existe; senão o símbolo da plataforma %>
+<link rel="icon" href="<%= escolaHead && escolaHead.logo ? escolaHead.logo : marca.simbolo %>">
+<link rel="apple-touch-icon" href="<%= marca.simboloPng %>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@800&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="/css/style.css">
 <% if (typeof temaEscola !== 'undefined' && temaEscola) { %>

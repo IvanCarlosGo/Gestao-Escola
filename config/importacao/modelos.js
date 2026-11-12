@@ -3,6 +3,7 @@ const ExcelJS = require('exceljs');
 const { DIAS_SEMANA, SLOTS_LETIVOS } = require('../horarioSlots');
 const { catalogoEscola } = require('./comum');
 const { COR_PADRAO } = require('../cores');
+const { MARCA } = require('../marca');
 
 const LINHAS_COM_LISTAS = 1000;
 
@@ -62,7 +63,7 @@ async function gerarModelo(escolaId, tipo, corEscola) {
   const cat = await catalogoEscola(escolaId);
   const ordenar = (arr) => [...arr].sort((a, b) => a.localeCompare(b, 'pt'));
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'Gestão Escolar';
+  wb.creator = MARCA.nome;
 
   if (tipo === 'professores') {
     const f = wb.addWorksheet('Professores');

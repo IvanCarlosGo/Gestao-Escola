@@ -9,6 +9,7 @@ const { waitForDatabase } = require('../config/db');
 const { migrar } = require('../config/migracoes');
 const { iniciais, avatarCor, dataCurta } = require('../config/ui');
 const { PERFIS } = require('../config/auth');
+const { MARCA } = require('../config/marca');
 const { carregarAdmin, exigirAdmin } = require('./auth');
 const { seedAdmin } = require('./seeder');
 
@@ -29,6 +30,7 @@ app.use((req, res, next) => {
   res.locals.avatarCor = avatarCor;
   res.locals.dataCurta = dataCurta;
   res.locals.perfis = PERFIS;
+  res.locals.marca = MARCA;
   next();
 });
 

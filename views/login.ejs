@@ -3,13 +3,13 @@
 <head>
   <%- include('partials/head') %>
 </head>
-<body class="login-body">
+<body class="login-body login-marca">
   <main class="login-wrap">
     <div class="login-card">
       <div class="login-brand">
-        <span class="login-icon"><i class="fa-solid fa-graduation-cap"></i></span>
-        <h1>Gestão Escolar</h1>
-        <p>Gestão de faltas dos professores</p>
+        <img src="<%= marca.simbolo %>" alt="" class="login-simbolo" width="64" height="64">
+        <h1 class="marca-nome"><%= marca.nome %></h1>
+        <p><%= marca.descricao %></p>
       </div>
 
       <% if (error) { %>
@@ -36,6 +36,7 @@
 
       <p class="login-foot">Esqueceu-se da palavra-passe? Peça ao administrador para a redefinir.</p>
     </div>
+    <p class="login-slogan"><%= marca.slogan %></p>
   </main>
 </body>
 </html>

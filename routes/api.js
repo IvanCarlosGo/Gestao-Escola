@@ -2,17 +2,24 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/db');
-const { DIAS_SEMANA, labelDia } = require('../config/horarioSlots');
+const { DIAS_SEMANA, SLOTS, labelDia } = require('../config/horarioSlots');
 const { MOTIVOS_FALTA } = require('../config/ui');
 const { aulasAgora, calcularProgresso } = require('../config/aulas');
 const {
   PERFIS, SQL_UTILIZADOR_ATIVO, verificarPalavraPasse, criarTokenApi, idDoTokenApi, bloqueado, registarFalha, limparFalhas
 } = require('../config/auth');
+const { COR_PADRAO, validarCor } = require('../config/cores');
 
-// Dados do utilizador devolvidos pela API (inclui a escola)
+// Dados do utilizador devolvidos pela API (inclui a escola e a sua identidade: logótipo e cor)
 const dadosUtilizador = (u) => ({
   id: u.id, nome: u.nome, email: u.email, perfil: u.perfil, perfil_nome: PERFIS[u.perfil],
-  escola: { id: u.escola_id, nome: u.escola_nome, sigla: u.escola_sigla }
+  escola: {
+    id: u.escola_id,
+    nome: u.escola_nome,
+    sigla: u.escola_sigla,
+    logo: u.escola_logo || null, // caminho relativo ao servidor (ex: /img/escolas/1-….png)
+    cor: u.escola_cor && !validarCor(u.escola_cor) ? u.escola_cor.toUpperCase() : COR_PADRAO
+  }
 });
 
 const DATA = /^\d{4}-\d{2}-\d{2}$/;
@@ -176,20 +183,40 @@ router.get('/horarios', async (req, res, next) => {
   }
 });
 
+// GET /api/tempos  -> blocos do horário diário (tempos letivos e intervalos)
+router.get('/tempos', (req, res) => {
+  let numero = 0;
+  res.json(SLOTS.map((s) => ({
+    numero: s.intervalo ? null : ++numero,
+    hora_inicio: s.inicio,
+    hora_fim: s.fim,
+    intervalo: Boolean(s.intervalo)
+  })));
+});
+
 // GET /api/motivos  -> lista sugerida de motivos
 router.get('/motivos', (req, res) => res.json(MOTIVOS_FALTA));
 
 // GET /api/faltas?data=YYYY-MM-DD&professor_id=   (por omissão: hoje)
+// GET /api/faltas?de=YYYY-MM-DD&ate=YYYY-MM-DD      (intervalo, no máximo 31 dias)
 router.get('/faltas', async (req, res, next) => {
   try {
-    const data = req.query.data || new Date().toLocaleDateString('sv-SE');
-    if (!dataValida(data)) return erro(res, 400, 'data inválida. Use o formato AAAA-MM-DD.');
+    const hoje = new Date().toLocaleDateString('sv-SE');
+    const intervalo = Boolean(req.query.de || req.query.ate);
+    const de = intervalo ? String(req.query.de || '') : String(req.query.data || hoje);
+    const ate = intervalo ? String(req.query.ate || '') : de;
+    if (!dataValida(de) || !dataValida(ate)) {
+      return erro(res, 400, intervalo ? 'de e ate são obrigatórios no formato AAAA-MM-DD.' : 'data inválida. Use o formato AAAA-MM-DD.');
+    }
+    const dias = (new Date(`${ate}T00:00:00`) - new Date(`${de}T00:00:00`)) / 86400000;
+    if (dias < 0) return erro(res, 400, 'ate tem de ser igual ou posterior a de.');
+    if (dias > 31) return erro(res, 400, 'O intervalo pode ter no máximo 31 dias.');
 
     let sql = `SELECT f.*, p.nome AS professor_nome FROM faltas f JOIN professores p ON p.id = f.professor_id
-               WHERE f.escola_id = ? AND f.data_falta = ?`;
-    const params = [req.escolaId, data];
+               WHERE f.escola_id = ? AND f.data_falta BETWEEN ? AND ?`;
+    const params = [req.escolaId, de, ate];
     if (req.query.professor_id) { sql += ' AND f.professor_id = ?'; params.push(req.query.professor_id); }
-    sql += ' ORDER BY p.nome, f.hora_inicio';
+    sql += ' ORDER BY f.data_falta, p.nome, f.hora_inicio';
 
     const [faltas] = await pool.query(sql, params);
     res.json(faltas.map(formatarFalta));
@@ -265,6 +292,28 @@ router.post('/faltas', async (req, res, next) => {
       [resultado.insertId]
     );
     res.status(201).json(formatarFalta(falta));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/faltas/:id  -> anula uma falta registada por engano (o "Desfazer" da aplicação).
+// Só faltas dos últimos 7 dias e ainda não justificadas; as restantes gerem-se no site da escola.
+router.delete('/faltas/:id', async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) return erro(res, 404, 'Falta não encontrada.');
+
+    const [[falta]] = await pool.query(
+      `SELECT id, justificada, data_falta >= CURDATE() - INTERVAL 7 DAY AS recente
+       FROM faltas WHERE id = ? AND escola_id = ?`, [id, req.escolaId]
+    );
+    if (!falta) return erro(res, 404, 'Falta não encontrada.');
+    if (falta.justificada) return erro(res, 409, 'Esta falta já foi justificada pela secretaria; só pode ser alterada no site da escola.');
+    if (!falta.recente) return erro(res, 409, 'Só é possível anular faltas dos últimos 7 dias; as mais antigas gerem-se no site da escola.');
+
+    await pool.query('DELETE FROM faltas WHERE id = ? AND escola_id = ?', [id, req.escolaId]);
+    res.status(204).end();
   } catch (err) {
     next(err);
   }

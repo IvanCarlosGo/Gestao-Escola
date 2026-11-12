@@ -9,7 +9,7 @@
       "_type": "workspace",
       "parentId": null,
       "scope": "collection",
-      "name": "Gestão Escolar — API da aplicação móvel",
+      "name": "Assídua — API da aplicação móvel",
       "description": "API JSON usada pela gestao_escolar_app (registo de faltas). Documentação: docs/API.md.\n\n1. Escolha o ambiente \"Local\" e preencha email e palavra_passe.\n2. Execute Autenticação › Login — o token é lido automaticamente da última resposta do login.\n3. Use os restantes pedidos."
     },
     {
@@ -204,6 +204,23 @@
       "metaSortKey": 5
     },
     {
+      "_id": "req_tempos",
+      "_type": "request",
+      "parentId": "fld_consulta",
+      "name": "Tempos do horário",
+      "method": "GET",
+      "url": "{{ _.base_url }}/tempos",
+      "headers": [],
+      "body": {},
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "description": "GET /api/tempos → blocos do dia (tempos letivos e intervalos).",
+      "metaSortKey": 4.5
+    },
+    {
       "_id": "req_faltas_dia",
       "_type": "request",
       "parentId": "fld_consulta",
@@ -231,6 +248,34 @@
       },
       "description": "GET /api/faltas — faltas de um dia (por omissão hoje), opcionalmente de um professor.",
       "metaSortKey": 6
+    },
+    {
+      "_id": "req_faltas_intervalo",
+      "_type": "request",
+      "parentId": "fld_consulta",
+      "name": "Faltas de um intervalo",
+      "method": "GET",
+      "url": "{{ _.base_url }}/faltas",
+      "headers": [],
+      "body": {},
+      "parameters": [
+        {
+          "name": "de",
+          "value": "2026-11-09",
+          "description": "AAAA-MM-DD"
+        },
+        {
+          "name": "ate",
+          "value": "2026-11-13",
+          "description": "AAAA-MM-DD (máx. 31 dias)"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "description": "GET /api/faltas?de=&ate= — por exemplo as faltas da semana.",
+      "metaSortKey": 6.5
     },
     {
       "_id": "req_falta_aula",
@@ -306,6 +351,23 @@
       },
       "description": "Responde 400 com { erro: \"Dados inválidos.\", detalhes: [...] }.",
       "metaSortKey": 9
+    },
+    {
+      "_id": "req_anular_falta",
+      "_type": "request",
+      "parentId": "fld_registo",
+      "name": "Anular falta (Desfazer)",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/faltas/{{ _.falta_id }}",
+      "headers": [],
+      "body": {},
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "description": "DELETE /api/faltas/:id → 204. Só faltas dos últimos 7 dias e não justificadas (senão 409). Defina falta_id no ambiente.",
+      "metaSortKey": 10
     },
     {
       "_id": "req_sem_token",

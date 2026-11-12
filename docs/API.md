@@ -1,10 +1,11 @@
-# API — Aplicação móvel de registo de faltas
+# API Assídua — Aplicação móvel de registo de faltas
 
 API JSON usada pela aplicação móvel para registar as faltas dos professores.
 A aplicação web consulta, gere e exporta estes registos.
 
 - **Base:** `http://<servidor>:3000/api`
 - **Formato:** JSON em UTF-8 (`Content-Type: application/json`)
+- **CORS:** aberto (`Access-Control-Allow-Origin: *`), para a versão web da aplicação; a API não usa cookies, só o token
 - **Datas:** `AAAA-MM-DD` · **Horas:** `HH:MM` · **Fuso horário:** o da escola (`TZ`, por omissão `Atlantic/Cape_Verde`)
 - **Coleção Insomnia:** [`docs/insomnia/gestao-escolar-api.insomnia.json`](insomnia/gestao-escolar-api.insomnia.json) — importe-a (*Import › From File*), escolha o ambiente **Local**, preencha `email`/`palavra_passe` e execute **Login** (o token é lido automaticamente da resposta).
 
@@ -33,11 +34,14 @@ Resposta `200`:
   "token": "3.1796425778513.Yk1…",
   "expira_em": "2026-12-04T23:09:38.513Z",
   "utilizador": { "id": 3, "nome": "Maria Lopes", "email": "secretaria@escola.cv", "perfil": "secretaria", "perfil_nome": "Secretaria",
-                  "escola": { "id": 1, "nome": "Escola Secundária Exemplo", "sigla": "ESE" } }
+                  "escola": { "id": 1, "nome": "Escola Secundária Exemplo", "sigla": "ESE",
+                              "logo": "/img/escolas/1-1730000000000.png", "cor": "#223C2F" } }
 }
 ```
 
 Se a escola do utilizador estiver suspensa no painel da plataforma, responde `403`.
+
+`escola.logo` e `escola.cor` são a identidade da escola, definida no painel da plataforma: a aplicação usa-os para se apresentar com o logótipo e a cor da escola depois do login. `logo` é um caminho relativo ao servidor (junte-lhe o endereço base) ou `null` se a escola não tiver logótipo; `cor` é sempre uma cor `#RRGGBB` com bom contraste com texto branco.
 
 ### `GET /api/eu`
 
@@ -85,6 +89,19 @@ Professores ativos: `[{ "id": 1, "nome": "Ana Sofia Martins", "disciplinas": ["M
 
 Aulas do horário semanal. Filtros opcionais: `professor_id`, `turma_id`, `dia_semana` (`segunda`, `terca`, `quarta`, `quinta`, `sexta`).
 
+### `GET /api/tempos`
+
+Blocos do horário diário, pela ordem do dia. `numero` é o número do tempo letivo (`null` nos intervalos).
+
+```json
+[
+  { "numero": 1, "hora_inicio": "07:30", "hora_fim": "08:15", "intervalo": false },
+  { "numero": null, "hora_inicio": "09:45", "hora_fim": "10:30", "intervalo": true }
+]
+```
+
+Uma aula do horário pode ocupar vários tempos seguidos (por exemplo `08:15`–`09:45`).
+
 ### `GET /api/motivos`
 
 Lista sugerida de motivos: `["Doença", "Consulta médica", "Motivos pessoais", "Formação", "Assistência familiar", "Outro"]`
@@ -92,6 +109,8 @@ Lista sugerida de motivos: `["Doença", "Consulta médica", "Motivos pessoais", 
 ### `GET /api/faltas`
 
 Faltas de um dia. Parâmetros opcionais: `data` (por omissão, hoje) e `professor_id`.
+
+Para um intervalo use `de` e `ate` (`AAAA-MM-DD`, no máximo 31 dias), por exemplo as faltas da semana: `/api/faltas?de=2026-11-09&ate=2026-11-13`. A lista vem ordenada por data, professor e hora.
 
 ## Registo
 
@@ -127,6 +146,12 @@ Resposta `201` com a falta criada:
 
 **Pedidos repetidos são seguros:** se a mesma falta já existir (mesmo professor, data e aula), a API responde `409` com `falta_id` e não cria outra. Assim a aplicação pode reenviar quando a rede falha.
 
+### `DELETE /api/faltas/:id`
+
+Anula uma falta registada por engano (o "Desfazer" da aplicação). Responde `204` sem corpo.
+
+Só é possível anular faltas **dos últimos 7 dias** e **ainda não justificadas**; nos outros casos responde `409` com a explicação, e a falta gere-se no site da escola.
+
 ## Erros
 
 Todas as respostas de erro têm o formato `{ "erro": "mensagem" }` (às vezes com `detalhes`).
@@ -136,8 +161,8 @@ Todas as respostas de erro têm o formato `{ "erro": "mensagem" }` (às vezes co
 | `400` | Dados inválidos ou JSON mal formado (`detalhes` lista os problemas) |
 | `401` | Sem token, token inválido/expirado, conta desativada ou escola suspensa |
 | `403` | Login de um utilizador cuja escola está suspensa |
-| `404` | Professor, aula ou endpoint inexistente |
-| `409` | Falta já registada |
+| `404` | Professor, aula, falta ou endpoint inexistente |
+| `409` | Falta já registada, ou falta que já não pode ser anulada |
 | `429` | Demasiadas tentativas de login |
 | `500` | Erro interno |
 

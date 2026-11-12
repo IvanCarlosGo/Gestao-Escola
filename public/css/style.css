@@ -1,8 +1,17 @@
 /* =========================================================
-   Gestão Escolar — folha de estilos
+   Assídua — folha de estilos
+   As variáveis --color-primary/--sidebar-* são a identidade da escola (cor escolhida no painel);
+   as --marca-* são a identidade da plataforma (config/marca.js).
    ========================================================= */
 
 :root {
+  --marca-azul: #1B4BC2;
+  --marca-azul-escuro: #143A98;
+  --marca-tinta: #0E1F4D;
+  --marca-sol: #F6B900;
+  --marca-nevoa: #E8EEFB;
+  --font-marca: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+
   --color-primary: #223C2F;
   --color-primary-rgb: 34, 60, 47;
   --color-primary-dark: #172a20;
@@ -1747,7 +1756,6 @@ tbody tr:nth-last-child(-n+2):not(:nth-child(-n+2)) .row-menu-list { top: auto; 
 }
 
 .login-brand { text-align: center; margin-bottom: 22px; }
-.login-brand img { border-radius: 50%; margin-bottom: 10px; }
 .login-brand h1 { font-size: 21px; font-weight: 700; color: var(--color-primary); }
 .login-brand p { margin: 6px 0 0; font-size: 12.5px; color: var(--color-text-muted); }
 
@@ -1788,12 +1796,51 @@ a.user-avatar:hover { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35); }
 }
 
 /* =========================================================
+   Marca da plataforma (Assídua)
+   ========================================================= */
+
+.marca-nome { font-family: var(--font-marca); font-weight: 800; letter-spacing: -0.02em; }
+
+/* Login: ainda não se sabe a escola, por isso usa a identidade da plataforma */
+.login-marca,
+.painel-login {
+  --color-primary: var(--marca-azul);
+  --color-primary-rgb: 27, 75, 194;
+  --color-primary-dark: var(--marca-azul-escuro);
+  --color-primary-light: var(--marca-nevoa);
+  background: linear-gradient(160deg, var(--marca-azul) 0%, var(--marca-tinta) 100%);
+}
+.painel-login { background: linear-gradient(160deg, var(--marca-tinta) 0%, #060D24 100%); }
+.login-marca .login-wrap,
+.painel-login .login-wrap { flex-direction: column; gap: 18px; }
+.login-simbolo { display: block; margin: 0 auto 14px; width: 64px; height: 64px; }
+.login-brand h1.marca-nome { font-size: 28px; color: var(--marca-tinta); }
+.login-slogan { margin: 0; color: rgba(255, 255, 255, 0.78); font-family: var(--font-marca); font-weight: 800; font-size: 14px; letter-spacing: 0.01em; }
+
+/* Assinatura no fundo da barra lateral da escola */
+.sidebar-credit {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 10px 12px 0;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 11.5px;
+  color: var(--sidebar-text);
+  opacity: 0.75;
+}
+.sidebar-credit img { border-radius: 4px; flex-shrink: 0; }
+.sidebar-credit strong { color: #fff; font-size: 12px; }
+.sidebar:not(:has(.sidebar-footer)) .sidebar-credit { margin-top: auto; }
+
+/* =========================================================
    Painel da plataforma (porta 8080)
    ========================================================= */
 
-.painel-body { --sidebar-bg: #111827; --sidebar-text: #c3c8d2; }
-.painel-body .nav-item.active { background: rgba(255, 255, 255, 0.12); }
-.painel-login { background: linear-gradient(160deg, #1f2937 0%, #0b1220 100%); }
+.painel-body { --sidebar-bg: var(--marca-tinta); --sidebar-text: #b9c4e0; --color-primary: var(--marca-azul); --color-primary-rgb: 27, 75, 194; --color-primary-dark: var(--marca-azul-escuro); --color-primary-light: var(--marca-nevoa); }
+.painel-body .nav-item.active { background: rgba(255, 255, 255, 0.12); box-shadow: inset 3px 0 0 var(--marca-sol); }
+.brand-icon-marca { background: none; border-radius: 12px; box-shadow: none; }
+.brand-icon-marca img { object-fit: cover; }
 
 .painel-tag {
   display: inline-flex;

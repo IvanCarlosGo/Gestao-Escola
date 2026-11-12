@@ -1,6 +1,25 @@
-# Gestão Escolar — Sistema de Faltas de Professores
+<p align="center"><img src="public/img/marca/simbolo.svg" width="72" alt=""></p>
 
-Aplicação web para gerir professores, turmas, disciplinas, horários e faltas de uma escola, com dashboard e design moderno.
+# Assídua — Gestão da assiduidade dos professores
+
+> *Cada aula conta.*
+
+Plataforma para gerir professores, turmas, disciplinas, horários e faltas de várias escolas, com dashboard, aplicação móvel e design moderno.
+
+## Identidade
+
+**Assídua** é a marca da plataforma; **cada escola tem a sua própria identidade** (nome, sigla, logótipo e cor), definida no painel da plataforma.
+
+| Onde | Identidade |
+|---|---|
+| Login do site e da app, painel da plataforma, ícone da app | Assídua |
+| Site da escola depois do login (barra lateral, cor, ícone do separador) e app móvel depois do login | A escola |
+| Rodapé da barra lateral | Assinatura discreta "com Assídua" |
+
+- **Símbolo:** uma pessoa de braços no ar a dizer *"presente!"*, desenhada com um visto — [`public/img/marca/simbolo.svg`](public/img/marca/simbolo.svg) (versão de uma cor: `simbolo-mono.svg`)
+- **Cores:** Azul Atlântico `#1B4BC2` (principal) · Azul-tinta `#0E1F4D` (fundos escuros) · Amarelo Sol `#F6B900` (acento, das estrelas da bandeira de Cabo Verde) · Névoa `#E8EEFB`
+- **Letra:** Plus Jakarta Sans ExtraBold no nome da marca; Inter na interface web
+- **Onde mudar:** [`config/marca.js`](config/marca.js) (web) e `lib/config/marca.dart` (app móvel)
 
 **Stack:** Node.js + Express · EJS · MySQL 8 (Docker) · Chart.js
 
