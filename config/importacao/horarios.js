@@ -110,10 +110,14 @@ async function analisarHorarios(escolaId, linhas, opcoes) {
     const daTurma = sobrepostas.find((o) => o.turma === aula.turma);
     const doProf = sobrepostas.find((o) => o.prof === aula.prof);
     const daSala = aula.sala ? sobrepostas.find((o) => o.sala === aula.sala) : null;
+    // Linhas que só falham por chocarem com aulas já gravadas: resolvem-se substituindo o horário dessas turmas
+    if ([daTurma, doProf, daSala].some((o) => o && o.onde === 'no horário atual')) {
+      r.conflitoComAtual = { turmas: [daTurma, doProf, daSala].filter((o) => o && o.onde === 'no horário atual').map((o) => o.turmaNome) };
+    }
     if (daTurma) r.erros.push(`Conflito: o ${daTurma.turmaNome} já tem ${daTurma.discNome} (${daTurma.profNome}) das ${intervalo(daTurma)} ${daTurma.onde}.`);
     if (doProf) r.erros.push(`Conflito: ${doProf.profNome} já tem aula no ${doProf.turmaNome} das ${intervalo(doProf)} ${doProf.onde}.`);
     if (daSala) r.erros.push(`Conflito: a ${r.sala} já está ocupada pelo ${daSala.turmaNome} das ${intervalo(daSala)} ${daSala.onde}.`);
-    if (r.erros.length) return { ...base, estado: 'erro', descricao };
+    if (r.erros.length) return { ...base, estado: 'erro', descricao, conflitoComAtual: r.conflitoComAtual };
 
     ocupacoes.push(aula);
     return {
@@ -138,7 +142,10 @@ async function analisarHorarios(escolaId, linhas, opcoes) {
       novasTurmas: novas('turma'),
       novosProfessores: novas('professor'),
       aulasApagar: aApagar.length,
-      turmasApagar: [...new Set(aApagar.map((h) => h.turma_nome))]
+      turmasApagar: [...new Set(aApagar.map((h) => h.turma_nome))],
+      // Linhas em conflito com o horário já gravado (sem a opção "substituir")
+      conflitosComAtual: resultado.filter((x) => x.conflitoComAtual).length,
+      turmasComConflito: [...new Set(resultado.flatMap((x) => (x.conflitoComAtual ? x.conflitoComAtual.turmas : [])))]
     }
   };
 }

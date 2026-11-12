@@ -71,6 +71,20 @@ router.post('/:tipo/previa', receberFicheiro, async (req, res, next) => {
       if (lido.erro) return renderInicio(res.status(400), { error: lido.erro });
       tabela = lido.tabela;
       origem = req.file.originalname;
+    } else if (req.body.dados) {
+      // Voltar a analisar as linhas já lidas (ex: ligar "substituir" a partir da pré-visualização)
+      const linhas = sanitizarLinhas(tipo, req.body.dados);
+      if (!linhas || !linhas.length) return renderInicio(res.status(400), { error: 'Os dados da importação perderam-se. Carregue o ficheiro outra vez.' });
+      const opcoes = opcoesDoPedido(req.body);
+      return res.render('importar/previa', {
+        pageTitle: `Pré-visualização · ${def.titulo}`,
+        activePage: 'importar',
+        tipo,
+        origem: String(req.body.origem || 'Ficheiro').slice(0, 200),
+        opcoes,
+        analise: await def.analisar(req.escolaId, linhas, opcoes),
+        dados: JSON.stringify(linhas)
+      });
     } else if (tipo === 'professores' && String(req.body.texto || '').trim()) {
       tabela = lerTexto(req.body.texto);
       origem = 'Lista colada';

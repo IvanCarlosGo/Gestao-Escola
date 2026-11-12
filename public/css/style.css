@@ -2078,6 +2078,7 @@ a.user-avatar:hover { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35); }
 .tempos-tabela .tempo-turno { font-size: 12px; color: var(--color-text-muted); width: 70px; }
 .tempos-tabela tr.tempo-intervalo td { background: var(--color-surface-soft); }
 .tempos-modelo { max-width: 360px; margin-bottom: 14px; }
+.previa-substituir { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
 .tempos-acoes { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
 .tempos-espaco { flex: 1; }
 .schedule-row-turno td { color: var(--color-primary); padding: 6px 0; letter-spacing: 0.04em; text-transform: uppercase; }

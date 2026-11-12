@@ -37,6 +37,27 @@
           <div class="mini-stat"><span class="mini-stat-label">Com erros</span><span class="mini-stat-value <%= r.erro ? 'text-danger' : '' %>"><%= r.erro %></span></div>
         </div>
 
+        <% if (!ehProf && r.conflitosComAtual && !opcoes.substituir) { %>
+          <%# As aulas já gravadas (ex: de uma importação anterior) chocam com o ficheiro: propor substituí-las %>
+          <div class="alert alert-warning previa-avisos">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <div>
+              <strong><%= r.conflitosComAtual %> linha(s) chocam com aulas que já estão gravadas</strong> em <%= r.turmasComConflito.join(', ') %>
+              (por exemplo de uma importação anterior).
+              Se este ficheiro é o novo horário destas turmas, substitua o horário atual delas: as aulas antigas das turmas do ficheiro são apagadas e trocadas pelas do ficheiro.
+              <form method="POST" action="/importar/<%= tipo %>/previa" class="previa-substituir">
+                <input type="hidden" name="dados" value="<%= dados %>">
+                <input type="hidden" name="origem" value="<%= origem %>">
+                <input type="hidden" name="substituir" value="1">
+                <% if (opcoes.criarEmFalta) { %><input type="hidden" name="criar_em_falta" value="1"><% } %>
+                <% if (opcoes.criarProfessores) { %><input type="hidden" name="criar_professores" value="1"><% } %>
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-arrows-rotate"></i> Substituir o horário destas turmas</button>
+                <span class="cell-muted">Ainda nada é gravado: verá a nova pré-visualização antes de confirmar.</span>
+              </form>
+            </div>
+          </div>
+        <% } %>
+
         <% if (criacoes.length || r.aulasApagar) { %>
           <div class="alert alert-warning previa-avisos">
             <i class="fa-solid fa-circle-info"></i>

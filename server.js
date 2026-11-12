@@ -9,6 +9,7 @@ const { iniciais, avatarCor, MOTIVOS_FALTA, dataCurta, dataNumerica } = require(
 const { carregarUtilizador, exigirLogin, verificarPermissao, prepararUtilizadores } = require('./config/auth');
 const { migrar } = require('./config/migracoes');
 const { MARCA } = require('./config/marca');
+const { INICIO_TARDE } = require('./config/horarioSlots');
 
 const indexRoutes = require('./routes/index');
 const professoresRoutes = require('./routes/professores');
@@ -63,6 +64,7 @@ app.use((req, res, next) => {
   res.locals.dataCurta = dataCurta;
   res.locals.dataNumerica = dataNumerica;
   res.locals.marca = MARCA;
+  res.locals.inicioTarde = INICIO_TARDE;
   next();
 });
 

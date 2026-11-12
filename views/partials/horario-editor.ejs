@@ -44,10 +44,11 @@
           <%# Salto grande entre tempos (30 min ou mais, ex: 12:20 → 13:00): mudança de turno.
               Os 10 min entre aulas (mudança de sala) não têm linha própria. %>
           <% const minutos = (h) => Number(h.slice(0, 2)) * 60 + Number(h.slice(3, 5)); %>
-          <% if (i > 0 && minutos(slot.inicio) - minutos(slots[i - 1].fim) >= 30) { %>
+          <% const passaParaTarde = i > 0 && slots[i - 1].inicio < inicioTarde && slot.inicio >= inicioTarde; %>
+          <% if (i > 0 && (passaParaTarde || minutos(slot.inicio) - minutos(slots[i - 1].fim) >= 30)) { %>
             <tr class="schedule-row-break schedule-row-turno">
               <td class="schedule-time-cell"><%= slots[i - 1].fim %>–<%= slot.inicio %></td>
-              <td colspan="<%= diasSemana.length %>"><%= slot.inicio >= '12:00' ? 'Turno da tarde' : 'Pausa' %></td>
+              <td colspan="<%= diasSemana.length %>"><%= passaParaTarde ? 'Turno da tarde' : 'Pausa' %></td>
             </tr>
           <% } %>
           <% if (slot.intervalo) { %>
@@ -262,22 +263,35 @@
       });
     }
 
-    // Opções de fim: blocos seguidos a partir do início, até ao próximo intervalo
+    // Opções de fim: tempos seguidos a partir do início (uma aula pode ocupar 2 ou mais tempos).
+    // Os minutos de mudança de sala entre tempos não interrompem; um intervalo ou a mudança de turno sim.
+    const minutos = (h) => Number(h.slice(0, 2)) * 60 + Number(h.slice(3, 5));
+    const INICIO_TARDE = '<%= inicioTarde %>';
+    const MUDANCA_DE_TURNO = 30; // min: um salto maior entre tempos também separa os turnos
+    const turno = (h) => (h < INICIO_TARDE ? 'manha' : 'tarde');
+    const formatar = (m) => (m < 60 ? `${m} min` : `${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}`);
     function preencherFim(inicio, fimAtual) {
       selFim.innerHTML = '';
-      const fins = [];
+      const fins = []; // { fim, aula: minutos de aula (sem a mudança de sala) }
       let k = slots.findIndex((s) => s.inicio === inicio && !s.intervalo);
       if (k >= 0) {
-        fins.push(slots[k].fim);
-        for (k++; k < slots.length && !slots[k].intervalo && slots[k].inicio === slots[k - 1].fim; k++) {
-          fins.push(slots[k].fim);
+        let aula = minutos(slots[k].fim) - minutos(slots[k].inicio);
+        fins.push({ fim: slots[k].fim, aula });
+        for (k++; k < slots.length && !slots[k].intervalo
+             && turno(slots[k].inicio) === turno(slots[k - 1].inicio)
+             && minutos(slots[k].inicio) - minutos(slots[k - 1].fim) < MUDANCA_DE_TURNO; k++) {
+          aula += minutos(slots[k].fim) - minutos(slots[k].inicio);
+          fins.push({ fim: slots[k].fim, aula });
         }
       }
+      const escolhido = fimAtual || (fins[0] && fins[0].fim);
       fins.forEach((f, n) => {
-        selFim.appendChild(opcao(f, `${f} (${n + 1} bloco${n ? 's' : ''})`, f === (fimAtual || fins[0])));
+        const texto = n === 0 ? `${f.fim} (1 tempo · ${formatar(f.aula)})` : `${f.fim} (${n + 1} tempos · ${formatar(f.aula)} de aula)`;
+        selFim.appendChild(opcao(f.fim, texto, f.fim === escolhido));
       });
+      const listaFins = fins.map((f) => f.fim);
       // Aula antiga com uma hora de fim fora dos blocos: mantém-se como opção
-      if (fimAtual && !fins.includes(fimAtual)) selFim.appendChild(opcao(fimAtual, fimAtual, true));
+      if (fimAtual && !listaFins.includes(fimAtual)) selFim.appendChild(opcao(fimAtual, fimAtual, true));
     }
 
     function abrir(aula) {
